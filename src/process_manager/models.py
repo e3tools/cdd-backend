@@ -37,7 +37,9 @@ class Project(models.Model):
             self.couch_id = new_document['_id']
 
         return self
-
+    
+    def simple_save(self, *args, **kwargs):
+        return super().save(*args, **kwargs)
 
 # The Phase object on couch looks like this
 # {

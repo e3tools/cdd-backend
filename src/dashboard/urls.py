@@ -7,4 +7,8 @@ urlpatterns = [
     path('facilitators/', include('dashboard.facilitators.urls')),
     path('administrative-levels/', include('dashboard.administrative_levels.urls')),
     path('diagnostics/', include('dashboard.diagnostics.urls')),
+    path('projects/', include('dashboard.projects.urls')),
+    path('phases/', include('dashboard.phases.urls')),
+    path('activities/', include('dashboard.activities.urls')),
+    path('tasks/', include('dashboard.tasks.urls')),
 ]
