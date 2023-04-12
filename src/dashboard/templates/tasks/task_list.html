@@ -8,8 +8,11 @@
             <tr>
                 <th>{% translate 'Name' %}</th>
                 <th>{% translate 'Description' %}</th>
+                <th>{% translate 'Project' %}</th>
+                <th>{% translate 'Phase' %}</th>
+                <th>{% translate 'activity' %}</th>
                 <th>{% translate 'Couch Id' %}</th>
-                <th>{% translate 'Action' %}</th>
+                <th width="20%">{% translate 'Action' %}</th>
             </tr>
             </thead>
             <tbody>
@@ -17,6 +20,9 @@
                 <tr>
                     <td>{{ task.name }}</td>
                     <td>{{ task.description }}</td>
+                    <td>{{ task.project }}</td>
+                    <td>{{ task.phase }}</td>
+                    <td>{{ task.activity }}</td>
                     <td>{{ task.couch_id }}</td>
                     <td>
                         <a href="#"

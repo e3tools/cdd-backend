@@ -27,7 +27,7 @@ class TaskListView(PageMixin, LoginRequiredMixin, generic.ListView):
     queryset = Task.objects.all()
     template_name = 'tasks/list.html'
     context_object_name = 'tasks'
-    title = gettext_lazy('tasks')
+    title = gettext_lazy('Tasks')
     active_level1 = 'tasks'
     breadcrumb = [
         {

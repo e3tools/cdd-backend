@@ -38,9 +38,12 @@
                     <table id="table" class="table">
                         <thead>
                         <tr>
-                            <th width="30%">{% translate 'Name' %}</th>
-                            <th width="30%">Description</th>
-                            <th  width="30%" >Couch Id</th>
+                            <th>{% translate 'Name' %}</th>
+                            <th>{% translate 'Description' %}</th>
+                            <th>{% translate 'Project' %}</th>
+                            <th>{% translate 'Phase' %}</th>
+                            <th>{% translate 'activity' %}</th>
+                            <th>{% translate 'Couch Id' %}</th>
                         </tr>
                         </thead>
                         <tbody>
@@ -48,6 +51,9 @@
                             <tr>
                                 <td>{{ task.name }}</td>
                                 <td>{{ task.description }}</td>
+                                <td>{{ task.project }}</td>
+                                <td>{{ task.phase }}</td>
+                                <td>{{ task.activity }}</td>
                                 <td>{{ task.couch_id }}</td>
                                 <td>
                                     <a href="#"
