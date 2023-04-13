@@ -9,8 +9,9 @@
                 <th>{% translate 'Name' %}</th>
                 <th>{% translate 'Description' %}</th>
                 <th>{% translate 'Project' %}</th>
+                <th>{% translate 'Order' %}</th>
                 <th>{% translate 'Couch Id' %}</th>
-                <th>{% translate 'Action' %}</th>
+                <th width="20%">{% translate 'Action' %}</th>
             </tr>
             </thead>
             <tbody>
@@ -19,18 +20,15 @@
                     <td>{{ phase.name }}</td>
                     <td>{{ phase.description }}</td>
                     <td>{{ phase.project }}</td>
+                    <td>{{ phase.order }}</td>
                     <td>{{ phase.couch_id }}</td>
                     <td>
-                        <a href="#"
-                            class="btn btn-primary btn-xs" title="{% translate 'See profile' %}">
-                            <span class="_web">Detail</span>
-                            <span class="_mobile"><i class="fa fa-user"></i></span>
-                        </a>
+                        
                         {% if user.is_superuser or user|has_group:"Admin" %}
-                        <a href="#"
-                            class="btn btn-primary btn-xs" title="{% translate 'See profile' %}">
+                        <a href="{% url 'dashboard:phases:update' phase.id %}"
+                            class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                             <span class="_web">Edit</span>
-                            <span class="_mobile"><i class="fa fa-edit"></i></span>
+                            <span class="_mobile"><i class="fa fa-user"></i></span>
                         </a>
                         {% endif %}
                     </td>

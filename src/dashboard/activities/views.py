@@ -8,15 +8,11 @@ from django.utils.translation import gettext_lazy
 from django.views import generic
 from datetime import datetime
 
-from process_manager.models import Phase, Activity, Project,Task
-from authentication.models import Facilitator
-from dashboard.facilitators.forms import FacilitatorForm, FilterTaskForm, UpdateFacilitatorForm, FilterFacilitatorForm
+from process_manager.models import Phase, Activity, Project
+from dashboard.activities.forms import ActivityForm
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
-from dashboard.utils import (
-    get_all_docs_administrative_levels_by_type_and_administrative_id,
-    get_all_docs_administrative_levels_by_type_and_parent_id
-)
+
 from authentication.permissions import (
     CDDSpecialistPermissionRequiredMixin, SuperAdminPermissionRequiredMixin,
     AdminPermissionRequiredMixin
@@ -56,6 +52,35 @@ class ActivityListTableView(LoginRequiredMixin, generic.ListView):
     # def get_context_data(self, **kwargs):
     #     context = super().get_context_data(**kwargs)
     #     return context
+class CreateActivityFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.FormView):
+    template_name = 'activities/create.html'
+    title = gettext_lazy('Create Activity')
+    active_level1 = 'activities'
+    form_class = ActivityForm
+    success_url = reverse_lazy('dashboard:activities:list')
+    breadcrumb = [
+        {
+            'url': reverse_lazy('dashboard:activities:list'),
+            'title': gettext_lazy('Phases')
+        },
+        {
+            'url': '',
+            'title': title
+        }
+    ]
 
+    def form_valid(self, form):
+        data = form.cleaned_data
+        #project = Project.objects.get(id = data['project'])
+        phase = Phase.objects.get(id = data['phase'])
+        activity = Activity(
+            name=data['name'], 
+            description=data['description'],
+            project = phase.project,
+            phase = phase,
+            total_tasks = data['total_tasks'],
+            order = data['order'])
+        activity.save()        
+        return super().form_valid(form)
 
     

@@ -10,14 +10,11 @@ from datetime import datetime
 from django.template import loader
 from django.http import HttpResponse, HttpResponseRedirect
 
-from process_manager.models import Phase, Activity, Project,Task
+from process_manager.models import Project
 from dashboard.projects.forms import ProjectForm, UpdateProjectForm
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
-from dashboard.utils import (
-    get_all_docs_administrative_levels_by_type_and_administrative_id,
-    get_all_docs_administrative_levels_by_type_and_parent_id
-)
+
 from authentication.permissions import (
     CDDSpecialistPermissionRequiredMixin, SuperAdminPermissionRequiredMixin,
     AdminPermissionRequiredMixin
@@ -97,17 +94,6 @@ class CreateProjectFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequir
         data = form.cleaned_data
         project = Project(name=data['name'], description=data['description'])
         project.save()
-        doc = {
-            "name": data['name'],
-            "type": "project",
-            "description": data['description'],
-            "sql_id": project.id
-        }       
-        nsc = NoSQLClient()
-        nsc_database = nsc.get_db("process_design")
-        new_document = nsc.create_document(nsc_database, doc)
-        project.couch_id = new_document['_id']
-        project.save()
         return super().form_valid(form)
     
 class UpdateProjectView(PageMixin, LoginRequiredMixin,AdminPermissionRequiredMixin, generic.UpdateView):
@@ -145,8 +131,6 @@ class UpdateProjectView(PageMixin, LoginRequiredMixin,AdminPermissionRequiredMix
             raise Http404
         return super().dispatch(request, *args, **kwargs)
 
-
-
     def get_context_data(self, **kwargs):
         ctx = super(UpdateProjectView, self).get_context_data(**kwargs)
         form = ctx.get('form')
@@ -176,14 +160,19 @@ class UpdateProjectView(PageMixin, LoginRequiredMixin,AdminPermissionRequiredMix
     def form_valid(self, form):
         data = form.cleaned_data
         project = form.save(commit=False)
-        project = Project(name=data['name'], description=data['description'])
-        project = project.save()      
-
+        project.name = data['name']
+        project.description = data['description']
+        project.couch_id = data['couch_id']
+        project.save()   
         doc = {          
             "name": data['name'],
+            "type": "project",
             "description": data['description'],
+            "sql_id": project.id
         }
         nsc = NoSQLClient()
+        query_result = self.project_db.get_query_result({"type": "project","_id": project.couch_id})[:]
+        self.doc = self.project_db[query_result[0]['_id']]
         nsc.update_doc(self.project_db, self.doc['_id'], doc)
         return redirect('dashboard:projects:list')
     
@@ -237,16 +226,17 @@ def updaterecord(request, id):
   doc = None
   _id = couch_id
   doc = {          
-            "name": name,
-            "description": description,
+            "name": project.name,
+            "type": "project",
+            "description": request.POST['description'],
+            "sql_id": project.id
         } 
-  nsc = NoSQLClient()  
-  nsc_database = nsc.get_db("process_design")
-  project_db = nsc.get_db(nsc_database)
-  query_result = project_db.get_query_result({"type": "project"})[:]
-  doc = project_db[query_result[0]['_id']]  
-  if new_document:
-            new_document = nsc.update_doc(nsc_database,doc['_id'], doc)
-            couch_id = new_document['_id']
-
+  try:
+      nsc = NoSQLClient()  
+      nsc_database = nsc.get_db("process_design")
+      query_result = nsc_database.get_query_result({"type": "project"})[:]
+      doc = nsc_database[query_result[0]['_id']] 
+      nsc.update_doc(nsc_database,doc['_id'], doc)
+  except Exception:
+      raise Http404
   return redirect('dashboard:projects:list')

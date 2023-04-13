@@ -7,23 +7,23 @@
                        
             <div class="card">
                 
-                <form action="updaterecord/{{ project.id }}" method="post">
+                <form method="post">
                     {% csrf_token %}
 
                     <div class="card-body">
                         <div class="row">
                             <div class="col-6">
-                                <label for="exampleInputEmail1">{% translate "Name" %}</label>
+                                <label >{% translate "Name" %}</label>
                     <input class="form-control" name="name" value="{{ project.name }}">
                             </div>
                             <div class="col-6">
-                                <label for="exampleInputEmail1">{% translate "Description" %}</label>
-                    <input class="form-control" name="description" value="{{ project.description }}"><br>
+                                <label>{% translate "Description" %}</label>
+                                <input class="form-control" name="description" value="{{ project.description }}"><br>
                             </div>
                         </div>
                         <div class="row">                            
                             <div class="col-6">
-                                <label for="exampleInputEmail1">{% translate "Couch ID" %}</label>
+                                <label>{% translate "Couch ID" %}</label>
                     <input class="form-control" name="couch_id" value="{{ project.couch_id }}" class="bootstrap4">
                             </div>
                         </div>

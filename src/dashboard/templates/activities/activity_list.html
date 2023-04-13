@@ -22,15 +22,10 @@
                     <td>{{ activity.project }}</td>
                     <td>{{ activity.phase }}</td>
                     <td>{{ activity.couch_id }}</td>
-                    <td>
-                        <a href="#"
-                            class="btn btn-primary btn-xs" title="{% translate 'See profile' %}">
-                            <span class="_web">Detail</span>
-                            <span class="_mobile"><i class="fa fa-user"></i></span>
-                        </a>
+                    <td>                        
                         {% if user.is_superuser or user|has_group:"Admin" %}
                         <a href="#"
-                            class="btn btn-primary btn-xs" title="{% translate 'See profile' %}">
+                            class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                             <span class="_web">Edit</span>
                             <span class="_mobile"><i class="fa fa-edit"></i></span>
                         </a>

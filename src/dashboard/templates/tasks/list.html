@@ -7,7 +7,7 @@
             
             {% if user.is_superuser or user|has_group:"Admin" %}
             <div class="float-right mb-3">
-                <a href="#"
+                <a href="{% url 'dashboard:tasks:create' %}"
                 class="btn btn-primary btn-sm rounded-xl">
                     <i class="fa fa-plus mr-2"></i>
                     Create Task
@@ -55,14 +55,9 @@
                                 <td>{{ task.phase }}</td>
                                 <td>{{ task.activity }}</td>
                                 <td>{{ task.couch_id }}</td>
-                                <td>
+                                <td>                                   
                                     <a href="#"
-                                       class="btn btn-primary btn-xs" title="{% translate 'See profile' %}">
-                                        <span class="_web">Detail</span>
-                                        <span class="_mobile"><i class="fa fa-user"></i></span>
-                                    </a>
-                                    <a href="#"
-                                       class="btn btn-primary btn-xs" title="{% translate 'See profile' %}">
+                                       class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                                         <span class="_web">Edit</span>
                                         <span class="_mobile"><i class="fa fa-edit"></i></span>
                                     </a>
@@ -112,8 +107,7 @@
     <script type="text/javascript">
         var type_field = "";
         let spin = $('#spin');
-        let tasks = $('#tasks-list');
-        let administrative_level = $('#id_administrative_level');        
+        let tasks = $('#tasks-list');       
 
         function loadTasks(type_field="") {
             spin.show();

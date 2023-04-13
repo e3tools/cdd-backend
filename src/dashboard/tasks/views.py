@@ -9,14 +9,10 @@ from django.views import generic
 from datetime import datetime
 
 from process_manager.models import Phase, Activity, Project,Task
-from authentication.models import Facilitator
-from dashboard.facilitators.forms import FacilitatorForm, FilterTaskForm, UpdateFacilitatorForm, FilterFacilitatorForm
+from dashboard.tasks.forms import TaskForm
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
-from dashboard.utils import (
-    get_all_docs_administrative_levels_by_type_and_administrative_id,
-    get_all_docs_administrative_levels_by_type_and_parent_id
-)
+
 from authentication.permissions import (
     CDDSpecialistPermissionRequiredMixin, SuperAdminPermissionRequiredMixin,
     AdminPermissionRequiredMixin
@@ -57,5 +53,40 @@ class TaskListTableView(LoginRequiredMixin, generic.ListView):
     #     context = super().get_context_data(**kwargs)
     #     return context
 
+class CreateTaskFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.FormView):
+    template_name = 'tasks/create.html'
+    title = gettext_lazy('Create Task')
+    active_level1 = 'tasks'
+    form_class = TaskForm
+    success_url = reverse_lazy('dashboard:tasks:list')
+    breadcrumb = [
+        {
+            'url': reverse_lazy('dashboard:tasks:list'),
+            'title': gettext_lazy('Tasks')
+        },
+        {
+            'url': '',
+            'title': title
+        }
+    ]
 
+    def form_valid(self, form):
+        data = form.cleaned_data
+        #project = Project.objects.get(id = data['project'])
+        #phase = Phase.objects.get(id = data['phase'])
+        activity = Activity.objects.get(id = data['activity'])
+        form = [] 
+        if data['form']:
+            form = data['form']
+        task = Task(
+            name=data['name'], 
+            description=data['description'],
+            project = activity.phase.project,
+            phase = activity.phase,
+            activity = activity,
+            order = data['order'],
+            form = form
+            )
+        task.save()        
+        return super().form_valid(form)
     
