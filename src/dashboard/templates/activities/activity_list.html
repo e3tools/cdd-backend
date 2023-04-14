@@ -29,6 +29,11 @@
                             <span class="_web">Edit</span>
                             <span class="_mobile"><i class="fa fa-edit"></i></span>
                         </a>
+                        <a href="{% url 'dashboard:activities:delete' activity.pk %}"
+                            class="btn btn-primary btn-xs" title="{% translate 'Delete' %}">
+                            <span class="_web">Delete</span>
+                            <span class="_mobile"><i class="fa fa-edit"></i></span>
+                        </a>
                         {% endif %}
                     </td>
                 </tr>

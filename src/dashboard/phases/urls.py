@@ -8,4 +8,5 @@ urlpatterns = [
     path('phases-list/', views.PhaseListTableView.as_view(), name='phases_list'),
     path('create/', views.CreatePhaseFormView.as_view(), name='create'),
     path('<int:pk>/update/', views.UpdatePhaseView.as_view(), name='update'),
+    path('delete/<int:id>', views.delete, name='delete'),
 ]

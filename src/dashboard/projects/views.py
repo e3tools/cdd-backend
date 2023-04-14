@@ -1,11 +1,12 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy
 from django.views import generic
+from django.views.generic.edit import CreateView, UpdateView, DeleteView
 from datetime import datetime
 from django.template import loader
 from django.http import HttpResponse, HttpResponseRedirect
@@ -240,3 +241,22 @@ def updaterecord(request, id):
   except Exception:
       raise Http404
   return redirect('dashboard:projects:list')
+
+
+def delete(request, id):
+  project = Project.objects.get(id=id)
+  
+  if request.method == 'POST':
+      nsc = NoSQLClient()
+      nsc_database = nsc.get_db("process_design")
+      new_document = nsc_database.get_query_result(
+            {"_id": project.couch_id}
+           )[0]
+      if new_document:
+          nsc.delete_document(nsc_database,project.couch_id)
+          project.delete()
+
+          return redirect('dashboard:projects:list')
+      
+  return render(request,'projects/project_confirm_delete.html',
+                    {'project': project})

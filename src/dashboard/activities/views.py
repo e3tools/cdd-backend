@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy
@@ -82,5 +82,25 @@ class CreateActivityFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequi
             order = data['order'])
         activity.save()        
         return super().form_valid(form)
+    
+def delete(request, id):
+  activity = Activity.objects.get(id=id)
+  
+  if request.method == 'POST':
+      nsc = NoSQLClient()
+      nsc_database = nsc.get_db("process_design")
+      new_document = nsc_database.get_query_result(
+            {"_id": activity.couch_id}
+           )[0]
+      if new_document:
+          nsc.delete_document(nsc_database,activity.couch_id)
+          activity.delete()
+
+          return redirect('dashboard:activities:list')
+      
+  return render(request,'activities/activity_confirm_delete.html',
+                    {'activity': activity})
+    
+
 
     

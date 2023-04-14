@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy
@@ -90,3 +90,20 @@ class CreateTaskFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         task.save()        
         return super().form_valid(form)
     
+def delete(request, id):
+  task = Task.objects.get(id=id)
+  
+  if request.method == 'POST':
+      nsc = NoSQLClient()
+      nsc_database = nsc.get_db("process_design")
+      new_document = nsc_database.get_query_result(
+            {"_id": task.couch_id}
+           )[0]
+      if new_document:
+          nsc.delete_document(nsc_database,task.couch_id)
+          task.delete()
+
+          return redirect('dashboard:tasks:list')
+      
+  return render(request,'tasks/task_confirm_delete.html',
+                    {'task': task})

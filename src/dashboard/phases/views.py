@@ -1,7 +1,7 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import Http404
-from django.shortcuts import redirect
+from django.shortcuts import redirect, render
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
 from django.utils.translation import gettext_lazy
@@ -166,4 +166,22 @@ class UpdatePhaseView(PageMixin, LoginRequiredMixin,AdminPermissionRequiredMixin
         self.doc = self.phase_db[query_result[0]['_id']]
         nsc.update_doc(self.phase_db, self.doc['_id'], doc)
         return redirect('dashboard:phase:list')
+    
+def delete(request, id):
+  phase = Phase.objects.get(id=id)
+  
+  if request.method == 'POST':
+      nsc = NoSQLClient()
+      nsc_database = nsc.get_db("process_design")
+      new_document = nsc_database.get_query_result(
+            {"_id": phase.couch_id}
+           )[0]
+      if new_document:
+          nsc.delete_document(nsc_database,phase.couch_id)
+          phase.delete()
+
+          return redirect('dashboard:phases:list')
+      
+  return render(request,'phases/phase_confirm_delete.html',
+                    {'phase': phase})
     
