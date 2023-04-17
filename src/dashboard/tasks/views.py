@@ -9,7 +9,7 @@ from django.views import generic
 from datetime import datetime
 
 from process_manager.models import Phase, Activity, Project,Task
-from dashboard.tasks.forms import TaskForm
+from dashboard.tasks.forms import TaskForm, UpdateTaskForm
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
 
@@ -107,3 +107,100 @@ def delete(request, id):
       
   return render(request,'tasks/task_confirm_delete.html',
                     {'task': task})
+
+
+class UpdateTaskView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
+    model = Task
+    template_name = 'tasks/update.html'
+    title = gettext_lazy('Edit Task')
+    active_level1 = 'tasks'
+    form_class = UpdateTaskForm
+    # success_url = reverse_lazy('dashboard:projects:list')
+    breadcrumb = [
+        {
+            'url': reverse_lazy('dashboard:tasks:list'),
+            'title': gettext_lazy('Tasks')
+        },
+        {
+            'url': '',
+            'title': title
+        }
+    ]
+    
+    task_db = None
+    task = None
+    doc = None
+    task_db_name = None
+
+    def dispatch(self, request, *args, **kwargs):
+        nsc = NoSQLClient()
+        try:
+            self.task = self.get_object()
+            self.task_db_name = 'process_design'
+            self.task_db = nsc.get_db(self.task_db_name)
+            query_result = self.task_db.get_query_result({"type": "task"})[:]
+            self.doc = self.task_db[query_result[0]['_id']]
+        except Exception:
+            raise Http404
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super(UpdateTaskView, self).get_context_data(**kwargs)
+        form = ctx.get('form')
+        ctx.setdefault('task_doc', self.doc)
+        if self.doc:
+            if form:
+                for label, field in form.fields.items():
+                    try:
+                        form.fields[label].value = self.doc[label]
+                    except Exception as exc:
+                        pass
+                    
+                ctx.setdefault('form', form)
+
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        
+        if not self.task_db_name:
+            raise Http404("We don't find the database name for the Task.")
+
+        form = UpdateTaskForm(request.POST, instance=self.task)
+        if form.is_valid():
+            return self.form_valid(form)
+        return self.get(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        data = form.cleaned_data
+        task = form.save(commit=False)
+        task.name=data['name'] 
+        task.description=data['description']
+        task.activity = data['activity']       
+        task.phase = task.activity.phase
+        task.project = task.activity.phase.project
+        task.form = data['form']
+        task.order = data['order']       
+        task.save()         
+        doc = {
+            "type": "task",
+            "project_id": task.activity.phase.project.couch_id,
+            "phase_id": task.activity.phase.couch_id,
+            "phase_name": task.activity.phase.name,
+            "activity_id": task.activity.couch_id,
+            "activity_name": task.activity.name,
+            "name": data['name'],
+            "order": data['order'],
+            "description": data['description'],
+            "completed": False,
+            "completed_date": "",
+            "capacity_attachments": [],
+            "attachments": [],
+            "form": data['form'],
+            "form_response": [],
+            "sql_id": task.id
+        }
+        nsc = NoSQLClient()
+        query_result = self.task_db.get_query_result({"_id": task.couch_id})[:]
+        self.doc = self.task_db[query_result[0]['_id']]
+        nsc.update_doc(self.task_db, self.doc['_id'], doc)
+        return redirect('dashboard:tasks:list')

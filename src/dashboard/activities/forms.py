@@ -37,12 +37,13 @@ class ActivityForm(forms.Form):
         #self.fields['project'].choices = [(x.id, x.name) for x in Project.objects.all()] 
         self.fields['phase'].choices = [(p.id, p.name) for p in Phase.objects.all()] 
 
-class UpdatePhaseForm(forms.ModelForm):    
+class UpdateActivityForm(forms.ModelForm):
     #choices = tuple(Project.objects.all().values_list()) 
     name = forms.CharField()
     description = forms.CharField()
-    couch_id = forms.CharField(required=False) 
-    project = forms.ChoiceField(choices = [])
+    couch_id = forms.CharField(required=False, disabled=True) 
+    phase = forms.ModelChoiceField(queryset=Phase.objects.distinct())
+    total_tasks = forms.IntegerField() 
     order = forms.IntegerField()    
 
     def clean(self):        
@@ -50,8 +51,8 @@ class UpdatePhaseForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['project'].choices = [(x.id, x.name) for x in Project.objects.all()]        
+        #self.fields['project'].queryset = [(x, x.name) for x in Project.objects.list()]        
 
     class Meta:
-        model = Phase
-        fields = ['name', 'description', 'couch_id','order','project'] # specify the fields to be displayed 
+        model = Activity
+        fields = ['name', 'description', 'couch_id', 'total_tasks', 'order', 'phase'] # specify the fields to be displayed 

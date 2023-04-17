@@ -36,12 +36,13 @@ class TaskForm(forms.Form):
         #self.fields['project'].choices = [(x.id, x.name) for x in Project.objects.all()] 
         self.fields['activity'].choices = [(p.id, p.name) for p in Activity.objects.all()] 
 
-class UpdateTaskForm(forms.ModelForm):    
+class UpdateTaskForm(forms.ModelForm):
     #choices = tuple(Project.objects.all().values_list()) 
     name = forms.CharField()
     description = forms.CharField()
-    couch_id = forms.CharField(required=False) 
-    project = forms.ChoiceField(choices = [])
+    couch_id = forms.CharField(required=False, disabled=True) 
+    activity = forms.ModelChoiceField(queryset=Activity.objects.distinct())
+    form = forms.JSONField(required=False)
     order = forms.IntegerField()    
 
     def clean(self):        
@@ -49,8 +50,8 @@ class UpdateTaskForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['project'].choices = [(x.id, x.name) for x in Project.objects.all()]        
+        #self.fields['project'].queryset = [(x, x.name) for x in Project.objects.list()]        
 
     class Meta:
         model = Task
-        fields = ['name', 'description', 'couch_id','order','project'] # specify the fields to be displayed 
+        fields = ['name', 'description', 'couch_id', 'order', 'activity', 'form'] # specify the fields to be displayed 

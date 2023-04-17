@@ -27,10 +27,10 @@
                     <td>
                         
                         {% if user.is_superuser or user|has_group:"Admin" %}
-                        <a href="#"
+                        <a href="{% url 'dashboard:tasks:update' task.pk %}"
                             class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                             <span class="_web">Edit</span>
-                            <span class="_mobile"><i class="fa fa-edit"></i></span>
+                            <span class="_mobile"><i class="fa fa-user"></i></span>
                         </a>
                         <a href="{% url 'dashboard:tasks:delete' task.pk %}"
                             class="btn btn-primary btn-xs" title="{% translate 'Delete' %}">
@@ -69,8 +69,7 @@
             });
             $('#search').on('keyup', function () {
                 table.search($(this).val()).draw();
-            });
-                   
+            });                
                        
 
         });

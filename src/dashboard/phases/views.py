@@ -79,9 +79,27 @@ class CreatePhaseFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequired
             project = project,
             order = data['order'])
         phase.save()        
-        return super().form_valid(form)
-    
-class UpdatePhaseView(PageMixin, LoginRequiredMixin,AdminPermissionRequiredMixin, generic.UpdateView):
+        return super().form_valid(form) 
+   
+def delete(request, id):
+  phase = Phase.objects.get(id=id)
+  
+  if request.method == 'POST':
+      nsc = NoSQLClient()
+      nsc_database = nsc.get_db("process_design")
+      new_document = nsc_database.get_query_result(
+            {"_id": phase.couch_id}
+           )[0]
+      if new_document:
+          nsc.delete_document(nsc_database,phase.couch_id)
+          phase.delete()
+
+          return redirect('dashboard:phases:list')
+      
+  return render(request,'phases/phase_confirm_delete.html',
+                    {'phase': phase})
+
+class UpdatePhaseView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
     model = Phase
     template_name = 'phases/update.html'
     title = gettext_lazy('Edit Phase')
@@ -144,44 +162,23 @@ class UpdatePhaseView(PageMixin, LoginRequiredMixin,AdminPermissionRequiredMixin
 
     def form_valid(self, form):
         data = form.cleaned_data
-        project = Project.objects.get(id=data['project'])
         phase = form.save(commit=False)
-        phase = Phase(
-            name=data['name'], 
-            description=data['description'],
-            couch_id = data['couch_id'],
-            project = project,
-            order = data['order'])
-        phase.save()          
+        phase.name=data['name'] 
+        phase.description=data['description']
+        phase.project = data['project']
+        phase.order = data['order']       
+        phase.save()         
         doc = {          
             "name": data['name'],
             "type": "phase",
             "description": data['description'],
             "order":data['order'],
             "capacity_attachments": [],
+            "project_id":phase.project.couch_id,
             "sql_id": phase.id
         }
         nsc = NoSQLClient()
-        query_result = self.phase_db.get_query_result({"type": "phase","_id": phase.couch_id})[:]
+        query_result = self.phase_db.get_query_result({"_id": phase.couch_id})[:]
         self.doc = self.phase_db[query_result[0]['_id']]
         nsc.update_doc(self.phase_db, self.doc['_id'], doc)
-        return redirect('dashboard:phase:list')
-    
-def delete(request, id):
-  phase = Phase.objects.get(id=id)
-  
-  if request.method == 'POST':
-      nsc = NoSQLClient()
-      nsc_database = nsc.get_db("process_design")
-      new_document = nsc_database.get_query_result(
-            {"_id": phase.couch_id}
-           )[0]
-      if new_document:
-          nsc.delete_document(nsc_database,phase.couch_id)
-          phase.delete()
-
-          return redirect('dashboard:phases:list')
-      
-  return render(request,'phases/phase_confirm_delete.html',
-                    {'phase': phase})
-    
+        return redirect('dashboard:phases:list')

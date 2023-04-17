@@ -16,7 +16,8 @@
                                 {% bootstrap_field form.name %}
                                 {% bootstrap_field form.description %}
                                 {% bootstrap_field form.order %}                                
-                                {% bootstrap_field form.project %}
+                                {% bootstrap_field form.activity %}
+                                {% bootstrap_field form.form %}
                                 {% bootstrap_field form.couch_id %}
                             </div>
                         </div> 
@@ -33,11 +34,3 @@
 
 {% endblock content %}
 
-{% block javascript %}
-    {{ block.super }}
-    <script type="text/javascript">        
-        
-        $("#id_phone").val("{{ phase_doc.phone }}");
-        $("#id_email").val("{{ phase_doc.email }}");
-    </script>
-{% endblock javascript %}

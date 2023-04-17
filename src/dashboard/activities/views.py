@@ -9,7 +9,7 @@ from django.views import generic
 from datetime import datetime
 
 from process_manager.models import Phase, Activity, Project
-from dashboard.activities.forms import ActivityForm
+from dashboard.activities.forms import ActivityForm, UpdateActivityForm
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
 
@@ -101,6 +101,93 @@ def delete(request, id):
   return render(request,'activities/activity_confirm_delete.html',
                     {'activity': activity})
     
+class UpdateActivityView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
+    model = Activity
+    template_name = 'activities/update.html'
+    title = gettext_lazy('Edit Activity')
+    active_level1 = 'activities'
+    form_class = UpdateActivityForm
+    # success_url = reverse_lazy('dashboard:projects:list')
+    breadcrumb = [
+        {
+            'url': reverse_lazy('dashboard:activities:list'),
+            'title': gettext_lazy('Activities')
+        },
+        {
+            'url': '',
+            'title': title
+        }
+    ]
+    
+    activity_db = None
+    activity = None
+    doc = None
+    activity_db_name = None
 
+    def dispatch(self, request, *args, **kwargs):
+        nsc = NoSQLClient()
+        try:
+            self.activity = self.get_object()
+            self.activity_db_name = 'process_design'
+            self.activity_db = nsc.get_db(self.activity_db_name)
+            query_result = self.activity_db.get_query_result({"type": "activity"})[:]
+            self.doc = self.activity_db[query_result[0]['_id']]
+        except Exception:
+            raise Http404
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_context_data(self, **kwargs):
+        ctx = super(UpdateActivityView, self).get_context_data(**kwargs)
+        form = ctx.get('form')
+        ctx.setdefault('activity_doc', self.doc)
+        if self.doc:
+            if form:
+                for label, field in form.fields.items():
+                    try:
+                        form.fields[label].value = self.doc[label]
+                    except Exception as exc:
+                        pass
+                    
+                ctx.setdefault('form', form)
+
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        
+        if not self.activity_db_name:
+            raise Http404("We don't find the database name for the Activity.")
+
+        form = UpdateActivityForm(request.POST, instance=self.activity)
+        if form.is_valid():
+            return self.form_valid(form)
+        return self.get(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        data = form.cleaned_data
+        activity = form.save(commit=False)
+        activity.name=data['name'] 
+        activity.description=data['description']        
+        activity.phase = data['phase']
+        activity.project = activity.phase.project
+        activity.total_tasks = data['total_tasks']
+        activity.order = data['order']       
+        activity.save()         
+        doc = {          
+            "name": data['name'],
+            "type": "activity",
+            "description": data['description'],
+            "order":data['order'],
+            "capacity_attachments": [],
+            "project_id":activity.phase.project.couch_id,
+            "phase_id":activity.phase.couch_id,
+            "total_tasks": data['total_tasks'],
+            "completed_tasks": 0,
+            "sql_id": activity.id
+        }
+        nsc = NoSQLClient()
+        query_result = self.activity_db.get_query_result({"_id": activity.couch_id})[:]
+        self.doc = self.activity_db[query_result[0]['_id']]
+        nsc.update_doc(self.activity_db, self.doc['_id'], doc)
+        return redirect('dashboard:activities:list')
 
     
