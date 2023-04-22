@@ -72,7 +72,7 @@ class CreateActivityFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequi
     def form_valid(self, form):
         data = form.cleaned_data
         #project = Project.objects.get(id = data['project'])
-        #phase = Phase.objects.get(id = data['phase'])
+        phase = Phase.objects.get(id = data['phase'])
         activity = Activity(
             name=data['name'], 
             description=data['description'],
