@@ -4,16 +4,7 @@
 {% block content %}
     <div class="row">
         <div class="col-12">
-            
-            {% if user.is_superuser or user|has_group:"Admin" %}
-            <div class="float-right mb-3">
-                <a href="{% url 'dashboard:activities:create' %}"
-                class="btn btn-primary btn-sm rounded-xl">
-                    <i class="fa fa-plus mr-2"></i>
-                    Create Activity
-                </a>
-            </div>
-            {% endif %}
+                        
 
             <div class="clearfix"></div>             
             
@@ -38,21 +29,15 @@
                     <table id="table" class="table">
                         <thead>
                         <tr>
+                            <th>{% translate 'Order' %}</th>
                             <th>{% translate 'Name' %}</th>
-                            <th>{% translate 'Description' %}</th>
-                            <th>{% translate 'Project' %}</th>
-                            <th>{% translate 'Phase' %}</th>
-                            <th>{% translate 'Couch Id' %}</th>
                         </tr>
                         </thead>
                         <tbody>
                         {% for activity in activities %}
                             <tr>
+                                <td>{{ activity.order }}</td>                    
                                 <td>{{ activity.name }}</td>
-                                <td>{{ activity.description }}</td>
-                                <td>{{ activity.project }}</td>
-                                <td>{{ activity.phase }}</td>
-                                <td>{{ activity.couch_id }}</td>
                                 <td>                                    
                                     <a href="#"
                                        class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">

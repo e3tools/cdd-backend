@@ -1,14 +1,14 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext_lazy
 from django.views import generic
 from datetime import datetime
 
-from process_manager.models import Phase, Activity, Project
+from process_manager.models import Phase, Activity, Project, Task
 from dashboard.activities.forms import ActivityForm, UpdateActivityForm
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
@@ -72,7 +72,7 @@ class CreateActivityFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequi
     def form_valid(self, form):
         data = form.cleaned_data
         #project = Project.objects.get(id = data['project'])
-        phase = Phase.objects.get(id = data['phase'])
+        #phase = Phase.objects.get(id = data['phase'])
         activity = Activity(
             name=data['name'], 
             description=data['description'],
@@ -82,7 +82,41 @@ class CreateActivityFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequi
             order = data['order'])
         activity.save()        
         return super().form_valid(form)
+
+class CreateActivityForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMixin,generic.FormView):
     
+    template_name = 'activities/create_activity.html'
+    title = gettext_lazy('Create Activity')
+    active_level1 = 'activities'
+    form_class = ActivityForm
+    success_url = reverse_lazy('dashboard:activities:list')
+    breadcrumb = [
+        {
+            'url': reverse_lazy('dashboard:activities:list'),
+            'title': gettext_lazy('Phases')
+        },
+        {
+            'url': '',
+            'title': title
+        }
+    ]
+
+    def form_valid(self, form):
+        data = form.cleaned_data
+        #project = Project.objects.get(id = data['project'])
+        pk = self.kwargs['id']
+        phase = Phase.objects.get(id = pk)
+        activity = Activity(
+            name=data['name'], 
+            description=data['description'],
+            project = phase.project,
+            phase = phase,
+            total_tasks = 0,
+            order = data['order'])
+        activity.save()        
+        return super().form_valid(form)
+
+   
 def delete(request, id):
   activity = Activity.objects.get(id=id)
   
@@ -167,9 +201,9 @@ class UpdateActivityView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         activity = form.save(commit=False)
         activity.name=data['name'] 
         activity.description=data['description']        
-        activity.phase = data['phase']
-        activity.project = activity.phase.project
-        activity.total_tasks = data['total_tasks']
+        #activity.phase = data['phase']
+        #activity.project = activity.phase.project
+        #activity.total_tasks = data['total_tasks']
         activity.order = data['order']       
         activity.save()         
         doc = {          
@@ -180,7 +214,7 @@ class UpdateActivityView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
             "capacity_attachments": [],
             "project_id":activity.phase.project.couch_id,
             "phase_id":activity.phase.couch_id,
-            "total_tasks": data['total_tasks'],
+            "total_tasks": activity.total_tasks,
             "completed_tasks": 0,
             "sql_id": activity.id
         }
@@ -189,5 +223,81 @@ class UpdateActivityView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         self.doc = self.activity_db[query_result[0]['_id']]
         nsc.update_doc(self.activity_db, self.doc['_id'], doc)
         return redirect('dashboard:activities:list')
+        #return redirect('dashboard:phases:phase_detail', activity.phase.id)
 
+def activity_detail_view(request, id):   
+
+    try:
+        activity = Activity.objects.get(id=id)
+        tasks = list(Task.objects.filter(activity_id = activity.id))
+    except Activity.DoesNotExist:
+        raise Http404('Activity does not exist')
+
+    return render(request, 'activities/activity_detail.html', context={'activity': activity, 'tasks': tasks})    
+
+def changeOrderUp(request, id):
+    activity = Activity.objects.get(id=id)
+    if activity:
+      activityAll = Activity.objects.filter(phase_id = activity.phase.id) 
+      activityPrev = activityAll.filter(order__lt=activity.order).order_by('order').last()   
+      if activityPrev:
+        if activity.order > 0:
+           if activityPrev.order == activity.order:
+               activity.order = activity.order - 1
+               activityPrev.order = activityPrev.order
+           else : 
+               activity.order = activity.order - 1
+               activityPrev.order = activityPrev.order + 1
+        activityPrev.save()    
+        activity.save()
+        doc = {          
+             "order": activity.order
+        }
+        docPrev = {
+            "order": activityPrev.order
+        }
+        nsc = NoSQLClient()
+        activity_db = nsc.get_db('process_design')
+        query_result = activity_db.get_query_result({"_id": activity.couch_id})[:]
+        query_result_prev = activity_db.get_query_result({"_id": activityPrev.couch_id})[:]        
+        docu = activity_db[query_result[0]['_id']]
+        docPrevU = activity_db[query_result_prev[0]['_id']]        
+        nsc.update_doc(activity_db, docu['_id'], doc)
+        nsc.update_doc(activity_db, docPrevU['_id'], docPrev)
+    
+    phase = Phase.objects.get(id=activity.phase.id)
+    activities = list(Activity.objects.filter(phase_id = phase.id).order_by('order'))
+
+    return render(request, 'phases/phase_detail.html', context={'phase': phase, 'activities': activities})
+    
+
+def changeOrderDown(request, id):
+    activity = Activity.objects.get(id=id)
+    if activity:
+      activityAll = Activity.objects.filter(phase_id = activity.phase.id)
+      activityNext = activityAll.filter(order__gt=activity.order).order_by('order').first()   
+      if activityNext:
+        activity.order = activity.order + 1
+        activityNext.order = activityNext.order - 1
+        activityNext.save()    
+        activity.save()
+        doc = {          
+             "order": activity.order
+        }
+        docNext = {
+            "order": activityNext.order
+        }
+        nsc = NoSQLClient()
+        phase_db = nsc.get_db('process_design')
+        query_result = phase_db.get_query_result({"_id": activity.couch_id})[:]
+        query_result_next = phase_db.get_query_result({"_id": activityNext.couch_id})[:]        
+        docu = phase_db[query_result[0]['_id']]
+        docNextU = phase_db[query_result_next[0]['_id']]        
+        nsc.update_doc(phase_db, docu['_id'], doc)
+        nsc.update_doc(phase_db, docNextU['_id'], docNext)
+    
+    phase = Phase.objects.get(id=activity.phase.id)
+    activities = list(Activity.objects.filter(phase_id = phase.id).order_by('order'))
+
+    return render(request, 'phases/phase_detail.html', context={'phase': phase, 'activities': activities})
     

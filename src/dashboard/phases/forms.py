@@ -13,9 +13,6 @@ class PhaseForm(forms.Form):
     #choices = tuple(Project.objects.all().values_list())   
     name = forms.CharField()
     description = forms.CharField()
-    project = forms.ChoiceField(choices = [])
-    couch_id = forms.CharField(required=False)
-    order = forms.IntegerField()
 
     def _post_clean(self):
         super()._post_clean()     
@@ -31,15 +28,12 @@ class PhaseForm(forms.Form):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields['project'].choices = [(x.id, x.name) for x in Project.objects.all()]  
+        #self.fields['project'].choices = [(x.id, x.name) for x in Project.objects.all()]  
 
 class UpdatePhaseForm(forms.ModelForm):
     #choices = tuple(Project.objects.all().values_list()) 
     name = forms.CharField()
-    description = forms.CharField()
-    couch_id = forms.CharField(required=False, disabled=True) 
-    project = forms.ModelChoiceField(queryset=Project.objects.distinct())
-    order = forms.IntegerField()    
+    description = forms.CharField() 
 
     def clean(self):        
         return super().clean()
@@ -50,4 +44,4 @@ class UpdatePhaseForm(forms.ModelForm):
 
     class Meta:
         model = Phase
-        fields = ['name', 'description', 'couch_id','order','project'] # specify the fields to be displayed 
+        fields = ['name', 'description'] # specify the fields to be displayed 

@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy
 from django.views import generic
 from datetime import datetime
 
-from process_manager.models import Phase, Project
+from process_manager.models import Phase, Project, Activity
 from dashboard.phases.forms import PhaseForm, UpdatePhaseForm
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
@@ -42,7 +42,7 @@ class PhaseListTableView(LoginRequiredMixin, generic.ListView):
 
     def get_results(self):
         phases = []        
-        phases = list(Phase.objects.all())
+        phases = list(Phase.objects.all().order_by('order'))
         return phases
 
     def get_queryset(self):
@@ -72,12 +72,12 @@ class CreatePhaseFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequired
 
     def form_valid(self, form):
         data = form.cleaned_data
-        project = Project.objects.get(id=data['project'])
+        project = Project.objects.first()
         phase = Phase(
             name=data['name'], 
             description=data['description'],
             project = project,
-            order = data['order'])
+            order = 0)
         phase.save()        
         return super().form_valid(form) 
    
@@ -87,10 +87,10 @@ def delete(request, id):
   if request.method == 'POST':
       nsc = NoSQLClient()
       nsc_database = nsc.get_db("process_design")
-      new_document = nsc_database.get_query_result(
+      del_document = nsc_database.get_query_result(
             {"_id": phase.couch_id}
            )[0]
-      if new_document:
+      if del_document:
           nsc.delete_document(nsc_database,phase.couch_id)
           phase.delete()
 
@@ -98,6 +98,61 @@ def delete(request, id):
       
   return render(request,'phases/phase_confirm_delete.html',
                     {'phase': phase})
+
+def changeOrderUp(request, id):
+    phase = Phase.objects.get(id=id)
+    if phase:
+      phasePrev = Phase.objects.filter(order__lt=phase.order).order_by('order').last()   
+      if phasePrev:
+        if phase.order > 0:
+           if phasePrev.order == phase.order:
+               phase.order = phase.order - 1
+               phasePrev.order = phasePrev.order
+           else : 
+               phase.order = phase.order - 1
+               phasePrev.order = phasePrev.order + 1
+        phasePrev.save()    
+        phase.save()
+        doc = {          
+             "order": phase.order
+        }
+        docPrev = {
+            "order": phasePrev.order
+        }
+        nsc = NoSQLClient()
+        phase_db = nsc.get_db('process_design')
+        query_result = phase_db.get_query_result({"_id": phase.couch_id})[:]
+        query_result_prev = phase_db.get_query_result({"_id": phasePrev.couch_id})[:]        
+        docu = phase_db[query_result[0]['_id']]
+        docPrevU = phase_db[query_result_prev[0]['_id']]        
+        nsc.update_doc(phase_db, docu['_id'], doc)
+        nsc.update_doc(phase_db, docPrevU['_id'], docPrev)
+    return redirect('dashboard:phases:list')
+
+def changeOrderDown(request, id):
+    phase = Phase.objects.get(id=id)
+    if phase:
+      phaseNext = Phase.objects.filter(order__gt=phase.order).order_by('order').first()   
+      if phaseNext:
+        phase.order = phase.order + 1
+        phaseNext.order = phaseNext.order - 1
+        phaseNext.save()    
+        phase.save()
+        doc = {          
+             "order": phase.order
+        }
+        docNext = {
+            "order": phaseNext.order
+        }
+        nsc = NoSQLClient()
+        phase_db = nsc.get_db('process_design')
+        query_result = phase_db.get_query_result({"_id": phase.couch_id})[:]
+        query_result_next = phase_db.get_query_result({"_id": phaseNext.couch_id})[:]        
+        docu = phase_db[query_result[0]['_id']]
+        docNextU = phase_db[query_result_next[0]['_id']]        
+        nsc.update_doc(phase_db, docu['_id'], doc)
+        nsc.update_doc(phase_db, docNextU['_id'], docNext)
+    return redirect('dashboard:phases:list')
 
 class UpdatePhaseView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
     model = Phase
@@ -164,21 +219,51 @@ class UpdatePhaseView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixi
         data = form.cleaned_data
         phase = form.save(commit=False)
         phase.name=data['name'] 
-        phase.description=data['description']
-        phase.project = data['project']
-        phase.order = data['order']       
+        phase.description=data['description']      
         phase.save()         
         doc = {          
             "name": data['name'],
-            "type": "phase",
-            "description": data['description'],
-            "order":data['order'],
-            "capacity_attachments": [],
-            "project_id":phase.project.couch_id,
-            "sql_id": phase.id
+            "description": data['description']
         }
         nsc = NoSQLClient()
         query_result = self.phase_db.get_query_result({"_id": phase.couch_id})[:]
         self.doc = self.phase_db[query_result[0]['_id']]
         nsc.update_doc(self.phase_db, self.doc['_id'], doc)
         return redirect('dashboard:phases:list')
+
+class PhaseDetailView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.DetailView):
+    template_name = 'phases/phase_detail.html'
+    context_object_name = 'phase_doc'
+    title = gettext_lazy('Phase Detail')
+    active_level1 = 'phases'
+    model = Phase
+    breadcrumb = [
+        {
+            'url': reverse_lazy('dashboard:phases:list'),
+            'title': gettext_lazy('Phases')
+        },
+        {
+            'url': '',
+            'title': title
+        }
+    ]
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['phase'] = self.obj
+        #facilitator_docs = self.facilitator_db.all_docs(include_docs=True)['rows']      
+        return context
+
+    def get_object(self, queryset=None):
+        return self.phase
+    
+def phase_detail_view(request, id):   
+
+    try:
+        phase = Phase.objects.get(id=id)
+        #activities = list(Activity.objects.all())
+        activities = list(Activity.objects.filter(phase_id = phase.id).order_by('order'))
+    except Phase.DoesNotExist:
+        raise Http404('Phase does not exist')
+
+    return render(request, 'phases/phase_detail.html', context={'phase': phase, 'activities': activities})
