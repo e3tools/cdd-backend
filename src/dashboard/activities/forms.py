@@ -16,7 +16,7 @@ class ActivityForm(forms.Form):
     #project = forms.ChoiceField(choices = [])
     #phase = forms.ChoiceField(choices = [])
     #total_tasks = forms.IntegerField()
-    order = forms.IntegerField()
+    #order = forms.IntegerField()
     couch_id = forms.CharField(required=False)
     
 
@@ -41,10 +41,10 @@ class UpdateActivityForm(forms.ModelForm):
     #choices = tuple(Project.objects.all().values_list()) 
     name = forms.CharField()
     description = forms.CharField()
-    couch_id = forms.CharField(required=False, disabled=True) 
+    #couch_id = forms.CharField(required=False, disabled=True) 
     #phase = forms.ModelChoiceField(queryset=Phase.objects.distinct())
     #total_tasks = forms.IntegerField() 
-    order = forms.IntegerField()    
+    #order = forms.IntegerField()    
 
     def clean(self):        
         return super().clean()
@@ -55,4 +55,4 @@ class UpdateActivityForm(forms.ModelForm):
 
     class Meta:
         model = Activity
-        fields = ['name', 'description', 'couch_id'] # specify the fields to be displayed 
+        fields = ['name', 'description'] # specify the fields to be displayed 

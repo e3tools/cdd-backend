@@ -218,5 +218,15 @@ class Task(models.Model):
         if not new_document:
             new_document = nsc.create_document(nsc_database, data)
             self.couch_id = new_document['_id']
+            activity = Activity.objects.get(id = self.activity_id)
+            activity.total_tasks = activity.total_tasks + 1
+            activity.save()
+            docu = {           
+                 "total_tasks": activity.total_tasks
+            }
+            query_result = nsc_database.get_query_result({"_id": self.activity.couch_id})[:]
+            doc = nsc_database[query_result[0]['_id']]
+            nsc.update_doc(nsc_database, doc['_id'], docu)
             self.save()
+            
         return self

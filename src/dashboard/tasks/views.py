@@ -1,9 +1,9 @@
 from django.contrib.auth.hashers import make_password
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.http import Http404
+from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import redirect, render
 from django.shortcuts import get_object_or_404
-from django.urls import reverse_lazy
+from django.urls import reverse, reverse_lazy
 from django.utils.translation import gettext_lazy
 from django.views import generic
 from datetime import datetime
@@ -100,11 +100,21 @@ def delete(request, id):
             {"_id": task.couch_id}
            )[0]
       if new_document:
+          activity = Activity.objects.get(id = task.activity_id)
+          activity.total_tasks = activity.total_tasks - 1
+          activity.save()
+          docu = {           
+                 "total_tasks": activity.total_tasks
+            }
+          query_result = nsc_database.get_query_result({"_id": task.activity.couch_id})[:]
+          doc = nsc_database[query_result[0]['_id']]
+          nsc.update_doc(nsc_database, doc['_id'], docu)
           nsc.delete_document(nsc_database,task.couch_id)
+          tasks = list(Task.objects.filter(activity_id = task.activity_id))
           task.delete()
-
-          return redirect('dashboard:tasks:list')
-      
+          return render(request,'activities/activity_detail.html', context={'activity': activity, 'tasks': tasks})
+          
+       
   return render(request,'tasks/task_confirm_delete.html',
                     {'task': task})
 
@@ -174,36 +184,22 @@ class UpdateTaskView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin
         data = form.cleaned_data
         task = form.save(commit=False)
         task.name=data['name'] 
-        task.description=data['description']
-        task.activity = data['activity']       
-        task.phase = task.activity.phase
-        task.project = task.activity.phase.project
-        task.form = data['form']
-        task.order = data['order']       
+        task.description=data['description']               
         task.save()         
         doc = {
-            "type": "task",
-            "project_id": task.activity.phase.project.couch_id,
-            "phase_id": task.activity.phase.couch_id,
-            "phase_name": task.activity.phase.name,
-            "activity_id": task.activity.couch_id,
-            "activity_name": task.activity.name,
             "name": data['name'],
-            "order": data['order'],
             "description": data['description'],
-            "completed": False,
-            "completed_date": "",
-            "capacity_attachments": [],
-            "attachments": [],
-            "form": data['form'],
-            "form_response": [],
             "sql_id": task.id
         }
         nsc = NoSQLClient()
         query_result = self.task_db.get_query_result({"_id": task.couch_id})[:]
         self.doc = self.task_db[query_result[0]['_id']]
         nsc.update_doc(self.task_db, self.doc['_id'], doc)
-        return redirect('dashboard:tasks:list')
+        
+        activity = Activity.objects.get(id = task.activity_id)
+        tasks = list(Task.objects.filter(activity_id = task.activity_id))
+        #return redirect('dashboard:tasks:list')
+        return render(self.request,'activities/activity_detail.html', context={'activity': activity, 'tasks': tasks})
 
 class CreateTaskForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMixin,generic.FormView):
     
@@ -229,8 +225,8 @@ class CreateTaskForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMixin,g
         pk = self.kwargs['id']
         activity = Activity.objects.get(id = pk)        
         form = [] 
-        if data['form']:
-            form = data['form']
+        #if data['form']:
+           # form = data['form']
         task = Task(
             name=data['name'], 
             description=data['description'],
@@ -240,8 +236,12 @@ class CreateTaskForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMixin,g
             order = 1,
             form = form
             )
-        task.save()        
-        return super().form_valid(form)
+        task.save()
+
+        activity = Activity.objects.get(id = task.activity_id)
+        tasks = list(Task.objects.filter(activity_id = task.activity_id))
+        return render(self.request,'activities/activity_detail.html', context={'activity': activity, 'tasks': tasks})        
+        #return super().form_valid(form)
 
 def task_detail_view(request, id):   
 
@@ -256,16 +256,18 @@ def task_detail_view(request, id):
 def changeOrderUp(request, id):
     task = Task.objects.get(id=id)
     if task:
-      taskAll = Task.objects.filter(activity_id = task.activity.id) 
-      taskPrev = taskAll.filter(order__lt=task.order).order_by('order').last()   
+      taskPrev = Task.objects.filter(order__lt=task.order).order_by('order').last()   
       if taskPrev:
         if task.order > 0:
-           if taskPrev.order == task.order:
-               task.order = task.order - 1
-               taskPrev.order = taskPrev.order
-           else : 
-               task.order = task.order - 1
-               taskPrev.order = taskPrev.order + 1
+           if task.order == 1:
+               exit
+           else:
+              if taskPrev.order == task.order:
+                  task.order = task.order - 1
+                  taskPrev.order = taskPrev.order
+              else : 
+                  task.order = task.order - 1
+                  taskPrev.order = taskPrev.order + 1
         taskPrev.save()    
         task.save()
         doc = {          
@@ -282,20 +284,40 @@ def changeOrderUp(request, id):
         docPrevU = task_db[query_result_prev[0]['_id']]        
         nsc.update_doc(task_db, docu['_id'], doc)
         nsc.update_doc(task_db, docPrevU['_id'], docPrev)
+      else:
+        if task.order > 0:
+          if task.order == 1:
+             exit
+          else:
+             task.order = task.order - 1
+             task.save()
+             doc = {
+                 "order": task.order
+             }
+             nsc = NoSQLClient()
+             task_db = nsc.get_db('process_design')
+             query_result = task_db.get_query_result({"_id": task.couch_id})[:]             
+             docu = task_db[query_result[0]['_id']]
+             nsc.update_doc(task_db, docu['_id'], doc)
     
     activity = Activity.objects.get(id=task.activity.id)
     tasks = list(Task.objects.filter(activity_id = activity.id).order_by('order'))
 
-    return render(request, 'activity/activity_detail.html', context={'activity': activity, 'tasks': tasks})
+    return render(request, 'activities/activity_detail.html', context={'activity': activity, 'tasks': tasks})
     
 def changeOrderDown(request, id):
     task = Task.objects.get(id=id)
+    task_count = Task.objects.filter(activity_id = task.activity_id).all().count()
     if task:
-      taskAll = Task.objects.filter(activity_id = task.activity.id)
-      taskNext = taskAll.filter(order__gt=task.order).order_by('order').first()   
+      taskNext = Task.objects.filter(order__gt=task.order).order_by('order').first()   
       if taskNext:
-        task.order = task.order + 1
-        taskNext.order = taskNext.order - 1
+        if taskNext.order > 0:
+            if taskNext.order == 1:
+                task.order = task.order + 1
+            else:
+                if task.order < task_count:
+                   task.order = task.order + 1
+                taskNext.order = taskNext.order - 1
         taskNext.save()    
         task.save()
         doc = {          
@@ -312,6 +334,18 @@ def changeOrderDown(request, id):
         docNextU = task_db[query_result_next[0]['_id']]        
         nsc.update_doc(task_db, docu['_id'], doc)
         nsc.update_doc(task_db, docNextU['_id'], docNext)
+      else:
+          if task.order < task_count: 
+            task.order = task.order + 1
+            task.save()
+            doc = {   
+             "order": task.order
+            }
+            nsc = NoSQLClient()
+            task_db = nsc.get_db('process_design')
+            query_result = task_db.get_query_result({"_id": task.couch_id})[:]
+            docu = task_db[query_result[0]['_id']]
+            nsc.update_doc(task_db, docu['_id'], doc)
     
     activity = Activity.objects.get(id=task.activity.id)
     tasks = list(Task.objects.filter(activity_id = activity.id).order_by('order'))

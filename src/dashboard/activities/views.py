@@ -112,10 +112,13 @@ class CreateActivityForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMix
             project = phase.project,
             phase = phase,
             total_tasks = 0,
-            order = data['order'])
+            order = 1)
         activity.save()        
-        return super().form_valid(form)
+        #return super().form_valid(form)
+        phase = Phase.objects.get(id= activity.phase_id)
+        activities = list(Activity.objects.filter(phase_id = phase.id).order_by('order'))
 
+        return render(self.request, 'phases/phase_detail.html', context={'phase': phase, 'activities': activities})
    
 def delete(request, id):
   activity = Activity.objects.get(id=id)
@@ -204,32 +207,28 @@ class UpdateActivityView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         #activity.phase = data['phase']
         #activity.project = activity.phase.project
         #activity.total_tasks = data['total_tasks']
-        activity.order = data['order']       
+        #activity.order = data['order']       
         activity.save()         
         doc = {          
             "name": data['name'],
-            "type": "activity",
             "description": data['description'],
-            "order":data['order'],
-            "capacity_attachments": [],
-            "project_id":activity.phase.project.couch_id,
-            "phase_id":activity.phase.couch_id,
-            "total_tasks": activity.total_tasks,
-            "completed_tasks": 0,
             "sql_id": activity.id
         }
         nsc = NoSQLClient()
         query_result = self.activity_db.get_query_result({"_id": activity.couch_id})[:]
         self.doc = self.activity_db[query_result[0]['_id']]
         nsc.update_doc(self.activity_db, self.doc['_id'], doc)
-        return redirect('dashboard:activities:list')
+        phase = Phase.objects.get(id= activity.phase_id)
+        activities = list(Activity.objects.filter(phase_id = activity.phase_id))
+        #return redirect('dashboard:activities:list')
+        return render(self.request,'phases/phase_detail.html', context={'phase': phase, 'activities': activities})
         #return redirect('dashboard:phases:phase_detail', activity.phase.id)
 
 def activity_detail_view(request, id):   
 
     try:
         activity = Activity.objects.get(id=id)
-        tasks = list(Task.objects.filter(activity_id = activity.id))
+        tasks = list(Task.objects.filter(activity_id = activity.id).order_by('order'))
     except Activity.DoesNotExist:
         raise Http404('Activity does not exist')
 
@@ -238,16 +237,18 @@ def activity_detail_view(request, id):
 def changeOrderUp(request, id):
     activity = Activity.objects.get(id=id)
     if activity:
-      activityAll = Activity.objects.filter(phase_id = activity.phase.id) 
-      activityPrev = activityAll.filter(order__lt=activity.order).order_by('order').last()   
+      activityPrev = Activity.objects.filter(order__lt=activity.order).order_by('order').last()   
       if activityPrev:
         if activity.order > 0:
-           if activityPrev.order == activity.order:
-               activity.order = activity.order - 1
-               activityPrev.order = activityPrev.order
-           else : 
-               activity.order = activity.order - 1
-               activityPrev.order = activityPrev.order + 1
+           if activity.order == 1:
+               exit
+           else:
+              if activityPrev.order == activity.order:
+                  activity.order = activity.order - 1
+                  activityPrev.order = activityPrev.order
+              else : 
+                  activity.order = activity.order - 1
+                  activityPrev.order = activityPrev.order + 1
         activityPrev.save()    
         activity.save()
         doc = {          
@@ -264,21 +265,40 @@ def changeOrderUp(request, id):
         docPrevU = activity_db[query_result_prev[0]['_id']]        
         nsc.update_doc(activity_db, docu['_id'], doc)
         nsc.update_doc(activity_db, docPrevU['_id'], docPrev)
-    
+      else:
+        if activity.order > 0:
+          if activity.order == 1:
+             exit
+          else:
+             activity.order = activity.order - 1
+             activity.save()
+             doc = {
+                 "order": activity.order
+             }
+             nsc = NoSQLClient()
+             activity_db = nsc.get_db('process_design')
+             query_result = activity_db.get_query_result({"_id": activity.couch_id})[:]             
+             docu = activity_db[query_result[0]['_id']]
+             nsc.update_doc(activity_db, docu['_id'], doc)
+
     phase = Phase.objects.get(id=activity.phase.id)
     activities = list(Activity.objects.filter(phase_id = phase.id).order_by('order'))
-
     return render(request, 'phases/phase_detail.html', context={'phase': phase, 'activities': activities})
     
 
 def changeOrderDown(request, id):
     activity = Activity.objects.get(id=id)
+    activity_count = Activity.objects.filter(phase_id = activity.phase_id).all().count()
     if activity:
-      activityAll = Activity.objects.filter(phase_id = activity.phase.id)
-      activityNext = activityAll.filter(order__gt=activity.order).order_by('order').first()   
+      activityNext = Activity.objects.filter(order__gt=activity.order).order_by('order').first()   
       if activityNext:
-        activity.order = activity.order + 1
-        activityNext.order = activityNext.order - 1
+        if activityNext.order > 0:
+            if activityNext.order == 1:
+                activity.order = activity.order + 1
+            else:
+                if activity.order < activity_count:
+                   activity.order = activity.order + 1
+                activityNext.order = activityNext.order - 1
         activityNext.save()    
         activity.save()
         doc = {          
@@ -288,13 +308,25 @@ def changeOrderDown(request, id):
             "order": activityNext.order
         }
         nsc = NoSQLClient()
-        phase_db = nsc.get_db('process_design')
-        query_result = phase_db.get_query_result({"_id": activity.couch_id})[:]
-        query_result_next = phase_db.get_query_result({"_id": activityNext.couch_id})[:]        
-        docu = phase_db[query_result[0]['_id']]
-        docNextU = phase_db[query_result_next[0]['_id']]        
-        nsc.update_doc(phase_db, docu['_id'], doc)
-        nsc.update_doc(phase_db, docNextU['_id'], docNext)
+        activity_db = nsc.get_db('process_design')
+        query_result = activity_db.get_query_result({"_id": activity.couch_id})[:]
+        query_result_next = activity_db.get_query_result({"_id": activityNext.couch_id})[:]        
+        docu = activity_db[query_result[0]['_id']]
+        docNextU = activity_db[query_result_next[0]['_id']]        
+        nsc.update_doc(activity_db, docu['_id'], doc)
+        nsc.update_doc(activity_db, docNextU['_id'], docNext)
+      else:
+          if activity.order < activity_count: 
+            activity.order = activity.order + 1
+            activity.save()
+            doc = {   
+             "order": activity.order
+            }
+            nsc = NoSQLClient()
+            activity_db = nsc.get_db('process_design')
+            query_result = activity_db.get_query_result({"_id": activity.couch_id})[:]
+            docu = activity_db[query_result[0]['_id']]
+            nsc.update_doc(activity_db, docu['_id'], doc)
     
     phase = Phase.objects.get(id=activity.phase.id)
     activities = list(Activity.objects.filter(phase_id = phase.id).order_by('order'))

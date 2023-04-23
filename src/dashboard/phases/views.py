@@ -105,12 +105,15 @@ def changeOrderUp(request, id):
       phasePrev = Phase.objects.filter(order__lt=phase.order).order_by('order').last()   
       if phasePrev:
         if phase.order > 0:
-           if phasePrev.order == phase.order:
-               phase.order = phase.order - 1
-               phasePrev.order = phasePrev.order
-           else : 
-               phase.order = phase.order - 1
-               phasePrev.order = phasePrev.order + 1
+           if phase.order == 1:
+               exit
+           else:
+              if phasePrev.order == phase.order:
+                  phase.order = phase.order - 1
+                  phasePrev.order = phasePrev.order
+              else : 
+                  phase.order = phase.order - 1
+                  phasePrev.order = phasePrev.order + 1
         phasePrev.save()    
         phase.save()
         doc = {          
@@ -127,15 +130,36 @@ def changeOrderUp(request, id):
         docPrevU = phase_db[query_result_prev[0]['_id']]        
         nsc.update_doc(phase_db, docu['_id'], doc)
         nsc.update_doc(phase_db, docPrevU['_id'], docPrev)
+      else:
+        if phase.order > 0:
+          if phase.order == 1:
+             exit
+          else:
+             phase.order = phase.order - 1
+             phase.save()
+             doc = {
+                 "order": phase.order
+             }
+             nsc = NoSQLClient()
+             phase_db = nsc.get_db('process_design')
+             query_result = phase_db.get_query_result({"_id": phase.couch_id})[:]             
+             docu = phase_db[query_result[0]['_id']]
+             nsc.update_doc(phase_db, docu['_id'], doc)
     return redirect('dashboard:phases:list')
 
 def changeOrderDown(request, id):
     phase = Phase.objects.get(id=id)
+    phase_count = Phase.objects.all().count()
     if phase:
       phaseNext = Phase.objects.filter(order__gt=phase.order).order_by('order').first()   
       if phaseNext:
-        phase.order = phase.order + 1
-        phaseNext.order = phaseNext.order - 1
+        if phaseNext.order > 0:
+            if phaseNext.order == 1:
+                phase.order = phase.order + 1
+            else:
+                if phase.order < phase_count:
+                   phase.order = phase.order + 1
+                phaseNext.order = phaseNext.order - 1
         phaseNext.save()    
         phase.save()
         doc = {          
@@ -152,6 +176,18 @@ def changeOrderDown(request, id):
         docNextU = phase_db[query_result_next[0]['_id']]        
         nsc.update_doc(phase_db, docu['_id'], doc)
         nsc.update_doc(phase_db, docNextU['_id'], docNext)
+      else:
+          if phase.order < phase_count: 
+            phase.order = phase.order + 1
+            phase.save()
+            doc = {   
+             "order": phase.order
+            }
+            nsc = NoSQLClient()
+            phase_db = nsc.get_db('process_design')
+            query_result = phase_db.get_query_result({"_id": phase.couch_id})[:]
+            docu = phase_db[query_result[0]['_id']]
+            nsc.update_doc(phase_db, docu['_id'], doc)
     return redirect('dashboard:phases:list')
 
 class UpdatePhaseView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):

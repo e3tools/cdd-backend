@@ -1,6 +1,7 @@
 from django.urls import path
 
 from dashboard.tasks import views
+from dashboard.activities import views as activityView
 
 app_name = 'tasks'
 urlpatterns = [
@@ -13,4 +14,5 @@ urlpatterns = [
     path('MoveUp/<int:id>', views.changeOrderUp, name='MoveUp'),
     path('MoveDown/<int:id>', views.changeOrderDown, name='MoveDown'),
     path('Detail/<int:id>', views.task_detail_view, name='task_Detail'),
+    path('Detail/<int:id>', activityView.activity_detail_view, name='activity_Detail'),
 ]
