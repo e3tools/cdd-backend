@@ -233,9 +233,11 @@ class CreateTaskForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMixin,g
             project = activity.phase.project,
             phase = activity.phase,
             activity = activity,
-            order = 1,
             form = form
             )
+        task_count = Task.objects.filter(activity_id = task.activity_id).all().count()
+        orderNew = task_count + 1
+        task.order = orderNew
         task.save()
 
         activity = Activity.objects.get(id = task.activity_id)

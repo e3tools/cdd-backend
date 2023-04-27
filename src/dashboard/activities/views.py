@@ -106,13 +106,16 @@ class CreateActivityForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMix
         #project = Project.objects.get(id = data['project'])
         pk = self.kwargs['id']
         phase = Phase.objects.get(id = pk)
+        
         activity = Activity(
             name=data['name'], 
             description=data['description'],
             project = phase.project,
             phase = phase,
-            total_tasks = 0,
-            order = 1)
+            total_tasks = 0)
+        activity_count = Activity.objects.filter(phase_id = activity.phase_id).all().count()
+        orderNew = activity_count + 1
+        activity.order = orderNew
         activity.save()        
         #return super().form_valid(form)
         phase = Phase.objects.get(id= activity.phase_id)

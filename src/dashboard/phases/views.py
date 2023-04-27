@@ -73,11 +73,13 @@ class CreatePhaseFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequired
     def form_valid(self, form):
         data = form.cleaned_data
         project = Project.objects.first()
+        phase_count = Phase.objects.all().count()
+        orderNew = phase_count + 1
         phase = Phase(
             name=data['name'], 
             description=data['description'],
             project = project,
-            order = 0)
+            order = orderNew)
         phase.save()        
         return super().form_valid(form) 
    
