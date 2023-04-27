@@ -92,7 +92,7 @@ class CreateTaskFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
     
 def delete(request, id):
   task = Task.objects.get(id=id)
-  
+  activity_id = task.activity.id
   if request.method == 'POST':
       nsc = NoSQLClient()
       nsc_database = nsc.get_db("process_design")
@@ -100,18 +100,18 @@ def delete(request, id):
             {"_id": task.couch_id}
            )[0]
       if new_document:
-          activity = Activity.objects.get(id = task.activity_id)
-          activity.total_tasks = activity.total_tasks - 1
-          activity.save()
+          activity = Activity.objects.get(id = task.activity_id)          
           docu = {           
                  "total_tasks": activity.total_tasks
             }
           query_result = nsc_database.get_query_result({"_id": task.activity.couch_id})[:]
           doc = nsc_database[query_result[0]['_id']]
           nsc.update_doc(nsc_database, doc['_id'], docu)
-          nsc.delete_document(nsc_database,task.couch_id)
-          tasks = list(Task.objects.filter(activity_id = task.activity_id))
+          nsc.delete_document(nsc_database,task.couch_id)          
           task.delete()
+          activity.total_tasks = Task.objects.filter(activity_id = activity.id).all().count()
+          activity.save()
+          tasks = list(Task.objects.filter(activity_id = activity_id))
           return render(request,'activities/activity_detail.html', context={'activity': activity, 'tasks': tasks})
           
        
@@ -197,7 +197,7 @@ class UpdateTaskView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin
         nsc.update_doc(self.task_db, self.doc['_id'], doc)
         
         activity = Activity.objects.get(id = task.activity_id)
-        tasks = list(Task.objects.filter(activity_id = task.activity_id))
+        tasks = list(Task.objects.filter(activity_id = task.activity_id).order_by('order'))
         #return redirect('dashboard:tasks:list')
         return render(self.request,'activities/activity_detail.html', context={'activity': activity, 'tasks': tasks})
 
@@ -235,13 +235,14 @@ class CreateTaskForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMixin,g
             activity = activity,
             form = form
             )
-        task_count = Task.objects.filter(activity_id = task.activity_id).all().count()
+        task_count = 0
+        task_count = Task.objects.filter(activity_id = activity.id).all().count()
         orderNew = task_count + 1
         task.order = orderNew
         task.save()
 
         activity = Activity.objects.get(id = task.activity_id)
-        tasks = list(Task.objects.filter(activity_id = task.activity_id))
+        tasks = list(Task.objects.filter(activity_id = task.activity_id).order_by('order'))
         return render(self.request,'activities/activity_detail.html', context={'activity': activity, 'tasks': tasks})        
         #return super().form_valid(form)
 

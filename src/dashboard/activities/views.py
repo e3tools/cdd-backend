@@ -105,15 +105,15 @@ class CreateActivityForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMix
         data = form.cleaned_data
         #project = Project.objects.get(id = data['project'])
         pk = self.kwargs['id']
-        phase = Phase.objects.get(id = pk)
-        
+        phase = Phase.objects.get(id = pk)        
         activity = Activity(
             name=data['name'], 
             description=data['description'],
             project = phase.project,
             phase = phase,
             total_tasks = 0)
-        activity_count = Activity.objects.filter(phase_id = activity.phase_id).all().count()
+        activity_count = 0
+        activity_count = Activity.objects.filter(phase_id = phase.id).all().count()
         orderNew = activity_count + 1
         activity.order = orderNew
         activity.save()        
@@ -125,18 +125,28 @@ class CreateActivityForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMix
    
 def delete(request, id):
   activity = Activity.objects.get(id=id)
-  
+  all_task = Task.objects.filter(activity_id = activity.id).all()
+  phase_id = activity.phase.id
   if request.method == 'POST':
       nsc = NoSQLClient()
       nsc_database = nsc.get_db("process_design")
+      for task in all_task:
+          task_document = nsc_database.get_query_result(
+            {"_id": task.couch_id}
+           )[0]
+          if task_document:
+              nsc.delete_document(nsc_database,task.couch_id)
+
       new_document = nsc_database.get_query_result(
             {"_id": activity.couch_id}
            )[0]
       if new_document:
-          nsc.delete_document(nsc_database,activity.couch_id)
+          nsc.delete_document(nsc_database,activity.couch_id)          
           activity.delete()
-
-          return redirect('dashboard:activities:list')
+          activities = list(Activity.objects.filter(phase_id = phase_id).order_by('order'))
+          phase = Phase.objects.get(id = phase_id)
+          
+          return render(request,'phases/phase_detail.html', context={'phase': phase, 'activities': activities})
       
   return render(request,'activities/activity_confirm_delete.html',
                     {'activity': activity})
@@ -222,7 +232,7 @@ class UpdateActivityView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         self.doc = self.activity_db[query_result[0]['_id']]
         nsc.update_doc(self.activity_db, self.doc['_id'], doc)
         phase = Phase.objects.get(id= activity.phase_id)
-        activities = list(Activity.objects.filter(phase_id = activity.phase_id))
+        activities = list(Activity.objects.filter(phase_id = activity.phase_id).order_by('order'))
         #return redirect('dashboard:activities:list')
         return render(self.request,'phases/phase_detail.html', context={'phase': phase, 'activities': activities})
         #return redirect('dashboard:phases:phase_detail', activity.phase.id)

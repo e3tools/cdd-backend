@@ -8,7 +8,7 @@ from django.utils.translation import gettext_lazy
 from django.views import generic
 from datetime import datetime
 
-from process_manager.models import Phase, Project, Activity
+from process_manager.models import Phase, Project, Activity, Task
 from dashboard.phases.forms import PhaseForm, UpdatePhaseForm
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
@@ -73,6 +73,7 @@ class CreatePhaseFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequired
     def form_valid(self, form):
         data = form.cleaned_data
         project = Project.objects.first()
+        phase_count = 0
         phase_count = Phase.objects.all().count()
         orderNew = phase_count + 1
         phase = Phase(
@@ -85,10 +86,21 @@ class CreatePhaseFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequired
    
 def delete(request, id):
   phase = Phase.objects.get(id=id)
-  
+  all_activity = Activity.objects.filter(phase_id = phase.id).all()
   if request.method == 'POST':
       nsc = NoSQLClient()
       nsc_database = nsc.get_db("process_design")
+      for act in all_activity:
+          all_task = Task.objects.filter(activity_id = act.id).all()
+          for tas in all_task:
+              task_document = nsc_database.get_query_result(
+                  {"_id": tas.couch_id})[0]
+              if task_document:
+                  nsc.delete_document(nsc_database,tas.couch_id)
+          actvity_document = nsc_database.get_query_result(
+                  {"_id": act.couch_id})[0]
+          if actvity_document:
+              nsc.delete_document(nsc_database, act.couch_id)
       del_document = nsc_database.get_query_result(
             {"_id": phase.couch_id}
            )[0]
@@ -299,7 +311,6 @@ def phase_detail_view(request, id):
 
     try:
         phase = Phase.objects.get(id=id)
-        #activities = list(Activity.objects.all())
         activities = list(Activity.objects.filter(phase_id = phase.id).order_by('order'))
     except Phase.DoesNotExist:
         raise Http404('Phase does not exist')

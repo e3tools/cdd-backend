@@ -219,7 +219,7 @@ class Task(models.Model):
             new_document = nsc.create_document(nsc_database, data)
             self.couch_id = new_document['_id']
             activity = Activity.objects.get(id = self.activity_id)
-            activity.total_tasks = activity.total_tasks + 1
+            activity.total_tasks = Task.objects.filter(activity_id = activity.id).all().count()
             activity.save()
             docu = {           
                  "total_tasks": activity.total_tasks
