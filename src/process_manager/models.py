@@ -35,9 +35,11 @@ class Project(models.Model):
         if not new_document:
             new_document = nsc.create_document(nsc_database, data)
             self.couch_id = new_document['_id']
-
+            self.save()
         return self
-
+    
+    def simple_save(self, *args, **kwargs):
+        return super().save(*args, **kwargs)
 
 # The Phase object on couch looks like this
 # {
@@ -86,7 +88,10 @@ class Phase(models.Model):
         if not new_document:
             new_document = nsc.create_document(nsc_database, data)
             self.couch_id = new_document['_id']
+            self.save()
         return self
+    def simple_save(self, *args, **kwargs):
+        return super().save(*args, **kwargs)
 
 
 #The activity object on couch looks like this
@@ -131,7 +136,7 @@ class Activity(models.Model):
             "description": self.description,
             "order": self.order,
             "capacity_attachments": [],
-            "project_id": self.project.couch_id,
+            "project_id": self.phase.project.couch_id,
             "phase_id": self.phase.couch_id,
             "total_tasks": self.total_tasks,
             "completed_tasks": 0,
@@ -145,6 +150,7 @@ class Activity(models.Model):
         if not new_document:
             new_document = nsc.create_document(nsc_database, data)
             self.couch_id = new_document['_id']
+            self.save()
         return self
 
 
@@ -188,9 +194,9 @@ class Task(models.Model):
             form = self.form
         data = {
             "type": "task",
-            "project_id": self.project.couch_id,
-            "phase_id": self.phase.couch_id,
-            "phase_name": self.phase.name,
+            "project_id": self.activity.phase.project.couch_id,
+            "phase_id": self.activity.phase.couch_id,
+            "phase_name": self.activity.phase.name,
             "activity_id": self.activity.couch_id,
             "activity_name": self.activity.name,
             "name": self.name,
@@ -212,4 +218,15 @@ class Task(models.Model):
         if not new_document:
             new_document = nsc.create_document(nsc_database, data)
             self.couch_id = new_document['_id']
+            activity = Activity.objects.get(id = self.activity_id)
+            activity.total_tasks = Task.objects.filter(activity_id = activity.id).all().count()
+            activity.save()
+            docu = {           
+                 "total_tasks": activity.total_tasks
+            }
+            query_result = nsc_database.get_query_result({"_id": self.activity.couch_id})[:]
+            doc = nsc_database[query_result[0]['_id']]
+            nsc.update_doc(nsc_database, doc['_id'], docu)
+            self.save()
+            
         return self
