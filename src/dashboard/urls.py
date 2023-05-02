@@ -11,4 +11,5 @@ urlpatterns = [
     path('phases/', include('dashboard.phases.urls')),
     path('activities/', include('dashboard.activities.urls')),
     path('tasks/', include('dashboard.tasks.urls')),
+    path('builder/', include('dashboard.form_builder.urls')),
 ]

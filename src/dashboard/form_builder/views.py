@@ -10,7 +10,7 @@ from django.shortcuts import redirect, get_list_or_404
 from dashboard.mixins import AJAXRequestMixin, PageMixin, JSONResponseMixin
 from no_sql_client import NoSQLClient
 from process_manager.models import FormType
-from form_builder.forms import FormTypeForm
+from dashboard.form_builder.forms import FormTypeForm, UpdateFormTypeForm
 
 from authentication.permissions import (
     CDDSpecialistPermissionRequiredMixin, SuperAdminPermissionRequiredMixin,
@@ -37,13 +37,13 @@ class FormTypeListView(PageMixin, LoginRequiredMixin, generic.ListView):
         return context
 
 class CreateFormTypeView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.FormView):
-    template_name = 'form_builder/form_type/list.html'
+    template_name = 'form_builder/form_type/create.html'
     title = gettext_lazy("Create Form Type")
     active_level1 = "form_types"
     form_class = FormTypeForm
-    success_url = reverse_lazy('dashboard:form_builder:form_type_list')
+    success_url = reverse_lazy('dashboard:form_builder:form-type-list')
     breadcrumb = [{
-        'url': reverse_lazy('dashboard:form_builder:form_type_list'),
+        'url': reverse_lazy('dashboard:form_builder:form-type-list'),
         'title': gettext_lazy('Form Types')
     },
     {
@@ -51,7 +51,34 @@ class CreateFormTypeView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         'title': title
     }]
 
+    def form_valid(self, form):
+        data = form.cleaned_data
+        form_fields = []
+        if data['fields']:
+            form_fields = data['fields']
+        form_type = FormType(
+            name=data['name'],
+            is_generic=data['is_generic'],
+            content_type=data['content_type'],
+            content_object=data['content_object']
+        )
+        form_type.save()
+        return super().form_valid(form)
 
+class UpdateFormTypeView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
+    model = FormType
+    template_name = 'form_builder/form_type/update.html'
+    title = gettext_lazy('Edit Form Type')
+    active_level1 = 'form_types'
+    form_class = UpdateFormTypeForm
+    breadcrumb = [{
+        'url': reverse_lazy('dashboard:form_types:list'),
+        'title': gettext_lazy('Form Types')
+    },
+    {
+        'url': '',
+        'title': title
+    }]
 # class FormTypeMixin:
 #     doc = None
 #     obj = None

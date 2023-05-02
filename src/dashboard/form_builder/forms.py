@@ -10,12 +10,12 @@ class FormTypeForm(forms.Form):
 		"duplicate_field": _("Another field with the same name is already defined"),
 		"duplicate_form": _("Another form associated with the task is already defined")
 	}
-	name = forms.CharField(blank=False, null=False, max_length=140, help_text=_("Unique name for the Model"))
+	name = forms.CharField(max_length=140, help_text=_("Unique name for the Model"))
 	#model = models.CharField(blank=False, null=False, max_length=140, choices=MODELS, help_text=_("Model associated with the form"))
 	is_generic = forms.BooleanField(help_text=_("Does the form apply to all instances of an object?"))
 	
 	content_type = forms.ChoiceField()
-	object_id = forms.PositiveIntegerField(hidden=True)
+	object_id = forms.IntegerField(disabled=True)
 	content_object = forms.ChoiceField(
 		choices=(())
 	) # GenericForeignKey("content_type", "object_id")
@@ -25,7 +25,7 @@ class FormTypeForm(forms.Form):
 		@TODO. Get List of models from couch_db. For the selected model, get its instances from couch db
 		For this project, just limit model to Task, but this can be applied generically to any model
 		"""
-		super.__init__(*args, **kwargs)
+		super().__init__(*args, **kwargs)
 		nsc = NoSQLClient()
 		# Get Models
 		MODELS = []
@@ -40,8 +40,25 @@ class FormTypeForm(forms.Form):
 		TASKS = []
 		for t in tasks:
 			TASKS.append((t.id, t.name))
-		self.fields['task'].choices = TASKS
+		self.fields['content_object'].choices = TASKS
 
+class UpdateFormTypeForm(forms.ModelForm):
+	name = forms.CharField()
+	is_generic = forms.BooleanField()	
+	content_type = forms.ChoiceField()
+	object_id = forms.IntegerField(disabled=True)
+	content_object = forms.ChoiceField()
+	couch_id = forms.CharField(required=False)
+
+	def clean(self):
+		return super().clean()
+
+	def __init__(self, *args, **kwargs):
+		super().__init__(*args, **kwargs)
+
+	class Meta:
+		model = FormType
+		fields = ['name', 'is_generic']
 
 class FormFieldForm(forms.Form):
 	error_messages = {
@@ -59,13 +76,13 @@ class FormFieldForm(forms.Form):
 		help_text=_("Type of field")
 	)
 	name = forms.CharField(help_text=_("Unique identifier for the field"))
-	options = forms.Textarea(required=False, help_text=_("For Select, enter list of Options, each on a new line."))
-	default = forms.Textarea(required=False, help_text=_("Default value for the field"))
-	description = forms.Textarea(required=False, help_text=_("Text to be displayed as help"))
-	required = forms.BooleanField(help_text=_("Is the field mandatory"))
+	options = forms.Textarea()#help_text=_("For Select, enter list of Options, each on a new line."))
+	default = forms.Textarea()# help_text=_("Default value for the field"))
+	description = forms.Textarea()#help_text=_("Text to be displayed as help"))
+	required = forms.BooleanField()#help_text=_("Is the field mandatory"))
 	hidden = forms.BooleanField(help_text=_("Is the field hidden?"))
 	read_only = forms.BooleanField(help_text=_("Is the field read-only?"))
-	form = forms.JSONField(read_only=True, hidden=True)
+	form = forms.JSONField(disabled=True)
 	
 	def __init__(self, *args, **kwargs):
 		super.__init__(*args, **kwargs)
