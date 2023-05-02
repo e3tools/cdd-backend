@@ -1,6 +1,10 @@
 from django.db import models
 from no_sql_client import NoSQLClient
-
+from django.utils.translation import gettext_lazy as _
+from process_manager.enums import FieldTypeEnum
+from django.contrib.contenttypes.models import ContentType
+from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.auth import get_user_model
 
 # Create your models here.
 # The project object on couch looks like this
@@ -12,34 +16,34 @@ from no_sql_client import NoSQLClient
 #     "description": "Lorem ipsum"
 # }
 class Project(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    couch_id = models.CharField(max_length=255, blank=True)
+	name = models.CharField(max_length=255)
+	description = models.TextField()
+	couch_id = models.CharField(max_length=255, blank=True)
 
-    def __str__(self):
-        return self.name
+	def __str__(self):
+		return self.name
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        data = {
-            "name": self.name,
-            "type": "project",
-            "description": self.description,
-            "sql_id": self.id
-        }
-        nsc = NoSQLClient()
-        nsc_database = nsc.get_db("process_design")
-        new_document = nsc_database.get_query_result(
-            {"_id": self.couch_id}
-        )[0]
-        if not new_document:
-            new_document = nsc.create_document(nsc_database, data)
-            self.couch_id = new_document['_id']
-            self.save()
-        return self
-    
-    def simple_save(self, *args, **kwargs):
-        return super().save(*args, **kwargs)
+	def save(self, *args, **kwargs):
+		super().save(*args, **kwargs)
+		data = {
+			"name": self.name,
+			"type": "project",
+			"description": self.description,
+			"sql_id": self.id
+		}
+		nsc = NoSQLClient()
+		nsc_database = nsc.get_db("process_design")
+		new_document = nsc_database.get_query_result(
+			{"_id": self.couch_id}
+		)[0]
+		if not new_document:
+			new_document = nsc.create_document(nsc_database, data)
+			self.couch_id = new_document['_id']
+			self.save()
+		return self
+	
+	def simple_save(self, *args, **kwargs):
+		return super().save(*args, **kwargs)
 
 # The Phase object on couch looks like this
 # {
@@ -60,38 +64,38 @@ class Project(models.Model):
 #     ]
 # }
 class Phase(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    project = models.ForeignKey("Project", on_delete=models.CASCADE)
-    couch_id = models.CharField(max_length=255, blank=True)
-    order = models.IntegerField()
+	name = models.CharField(max_length=255)
+	description = models.TextField()
+	project = models.ForeignKey("Project", on_delete=models.CASCADE)
+	couch_id = models.CharField(max_length=255, blank=True)
+	order = models.IntegerField()
 
-    def __str__(self):
-        return self.name
+	def __str__(self):
+		return self.name
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        data = {
-            "name": self.name,
-            "type": "phase",
-            "description": self.description,
-            "order": self.order,
-            "capacity_attachments": [],
-            "project_id": self.project.couch_id,
-            "sql_id": self.id
-        }
-        nsc = NoSQLClient()
-        nsc_database = nsc.get_db("process_design")
-        new_document = nsc_database.get_query_result(
-            {"_id": self.couch_id}
-        )[0]
-        if not new_document:
-            new_document = nsc.create_document(nsc_database, data)
-            self.couch_id = new_document['_id']
-            self.save()
-        return self
-    def simple_save(self, *args, **kwargs):
-        return super().save(*args, **kwargs)
+	def save(self, *args, **kwargs):
+		super().save(*args, **kwargs)
+		data = {
+			"name": self.name,
+			"type": "phase",
+			"description": self.description,
+			"order": self.order,
+			"capacity_attachments": [],
+			"project_id": self.project.couch_id,
+			"sql_id": self.id
+		}
+		nsc = NoSQLClient()
+		nsc_database = nsc.get_db("process_design")
+		new_document = nsc_database.get_query_result(
+			{"_id": self.couch_id}
+		)[0]
+		if not new_document:
+			new_document = nsc.create_document(nsc_database, data)
+			self.couch_id = new_document['_id']
+			self.save()
+		return self
+	def simple_save(self, *args, **kwargs):
+		return super().save(*args, **kwargs)
 
 
 #The activity object on couch looks like this
@@ -116,42 +120,42 @@ class Phase(models.Model):
 #     "completed_tasks": 0
 # }
 class Activity(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    project = models.ForeignKey("Project", on_delete=models.CASCADE)
-    phase = models.ForeignKey("Phase", on_delete=models.CASCADE)
-    total_tasks = models.IntegerField()
-    order = models.IntegerField()
-    couch_id = models.CharField(max_length=255, blank=True)
+	name = models.CharField(max_length=255)
+	description = models.TextField()
+	project = models.ForeignKey("Project", on_delete=models.CASCADE)
+	phase = models.ForeignKey("Phase", on_delete=models.CASCADE)
+	total_tasks = models.IntegerField()
+	order = models.IntegerField()
+	couch_id = models.CharField(max_length=255, blank=True)
 
-    def __str__(self):
-        return self.phase.name + '-' + self.name
+	def __str__(self):
+		return self.phase.name + '-' + self.name
 
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        data = {
-            "name": self.name,
-            "type": "activity",
-            "description": self.description,
-            "order": self.order,
-            "capacity_attachments": [],
-            "project_id": self.phase.project.couch_id,
-            "phase_id": self.phase.couch_id,
-            "total_tasks": self.total_tasks,
-            "completed_tasks": 0,
-            "sql_id": self.id
-        }
-        nsc = NoSQLClient()
-        nsc_database = nsc.get_db("process_design")
-        new_document = nsc_database.get_query_result(
-            {"_id": self.couch_id}
-        )[0]
-        if not new_document:
-            new_document = nsc.create_document(nsc_database, data)
-            self.couch_id = new_document['_id']
-            self.save()
-        return self
+	def save(self, *args, **kwargs):
+		super().save(*args, **kwargs)
+		data = {
+			"name": self.name,
+			"type": "activity",
+			"description": self.description,
+			"order": self.order,
+			"capacity_attachments": [],
+			"project_id": self.phase.project.couch_id,
+			"phase_id": self.phase.couch_id,
+			"total_tasks": self.total_tasks,
+			"completed_tasks": 0,
+			"sql_id": self.id
+		}
+		nsc = NoSQLClient()
+		nsc_database = nsc.get_db("process_design")
+		new_document = nsc_database.get_query_result(
+			{"_id": self.couch_id}
+		)[0]
+		if not new_document:
+			new_document = nsc.create_document(nsc_database, data)
+			self.couch_id = new_document['_id']
+			self.save()
+		return self
 
 
 # The task object on couch looks like this
@@ -175,58 +179,110 @@ class Activity(models.Model):
 #   "attachments": [],
 #   "form": []
 class Task(models.Model):
-    name = models.CharField(max_length=255)
-    description = models.TextField()
-    project = models.ForeignKey("Project", on_delete=models.CASCADE)
-    phase = models.ForeignKey("Phase", on_delete=models.CASCADE)
-    activity = models.ForeignKey("Activity", on_delete=models.CASCADE)
-    order = models.IntegerField()
-    form = models.JSONField(null=True, blank=True)
-    couch_id = models.CharField(max_length=255, blank=True)
+	name = models.CharField(max_length=255)
+	description = models.TextField()
+	project = models.ForeignKey("Project", on_delete=models.CASCADE)
+	phase = models.ForeignKey("Phase", on_delete=models.CASCADE)
+	activity = models.ForeignKey("Activity", on_delete=models.CASCADE)
+	order = models.IntegerField()
+	form = models.JSONField(null=True, blank=True)
+	couch_id = models.CharField(max_length=255, blank=True)
 
-    def __str__(self):
-        return self.phase.name + '-' + self.activity.name + '-' + self.name
+	def __str__(self):
+		return self.phase.name + '-' + self.activity.name + '-' + self.name
 
-    def save(self, *args, **kwargs):
-        super().save(*args, **kwargs)
-        form = []
-        if self.form:
-            form = self.form
-        data = {
-            "type": "task",
-            "project_id": self.activity.phase.project.couch_id,
-            "phase_id": self.activity.phase.couch_id,
-            "phase_name": self.activity.phase.name,
-            "activity_id": self.activity.couch_id,
-            "activity_name": self.activity.name,
-            "name": self.name,
-            "order": self.order,
-            "description": self.description,
-            "completed": False,
-            "completed_date": "",
-            "capacity_attachments": [],
-            "attachments": [],
-            "form": form,
-            "form_response": [],
-            "sql_id": self.id
-        }
-        nsc = NoSQLClient()
-        nsc_database = nsc.get_db("process_design")
-        new_document = nsc_database.get_query_result(
-            {"_id": self.couch_id}
-        )[0]
-        if not new_document:
-            new_document = nsc.create_document(nsc_database, data)
-            self.couch_id = new_document['_id']
-            activity = Activity.objects.get(id = self.activity_id)
-            activity.total_tasks = Task.objects.filter(activity_id = activity.id).all().count()
-            activity.save()
-            docu = {           
-                 "total_tasks": activity.total_tasks
-            }
-            query_result = nsc_database.get_query_result({"_id": self.activity.couch_id})[:]
-            doc = nsc_database[query_result[0]['_id']]
-            nsc.update_doc(nsc_database, doc['_id'], docu)
-            self.save()
-            
-        return self
+	def save(self, *args, **kwargs):
+		super().save(*args, **kwargs)
+		form = []
+		if self.form:
+			form = self.form
+		data = {
+			"type": "task",
+			"project_id": self.activity.phase.project.couch_id,
+			"phase_id": self.activity.phase.couch_id,
+			"phase_name": self.activity.phase.name,
+			"activity_id": self.activity.couch_id,
+			"activity_name": self.activity.name,
+			"name": self.name,
+			"order": self.order,
+			"description": self.description,
+			"completed": False,
+			"completed_date": "",
+			"capacity_attachments": [],
+			"attachments": [],
+			"form": form,
+			"form_response": [],
+			"sql_id": self.id
+		}
+		nsc = NoSQLClient()
+		nsc_database = nsc.get_db("process_design")
+		new_document = nsc_database.get_query_result(
+			{"_id": self.couch_id}
+		)[0]
+		if not new_document:
+			new_document = nsc.create_document(nsc_database, data)
+			self.couch_id = new_document['_id']
+			activity = Activity.objects.get(id = self.activity_id)
+			activity.total_tasks = Task.objects.filter(activity_id = activity.id).all().count()
+			activity.save()
+			docu = {           
+				 "total_tasks": activity.total_tasks
+			}
+			query_result = nsc_database.get_query_result({"_id": self.activity.couch_id})[:]
+			doc = nsc_database[query_result[0]['_id']]
+			nsc.update_doc(nsc_database, doc['_id'], docu)
+			self.save()
+			
+		return self
+
+User = get_user_model()
+class BaseModel(models.Model):
+	created_on = models.DateTimeField(auto_now_add=True)
+	created_by = models.ForeignKey(User, null=True, on_delete=models.PROTECT, related_name="%(app_label)s_%(class)s_creator")
+	updated_on = models.DateTimeField(auto_now=True)
+	updated_by = models.ForeignKey(User, null=True, on_delete=models.PROTECT, related_name="%(app_label)s_%(class)s_updater")
+	# is_deleted = models.Boolean(default=False)
+	# deleted_on = models.DateTimeField(null=True)
+	# deleted_by = models.ForeignKey(get_user_model(), null=True)
+	
+	class Meta:
+		abstract = True
+
+# Create your models here.
+class FormType(BaseModel):
+	"""
+	Model representing a Form Type 
+	"""
+	# MODELS = [] 
+	# existing_models = django.apps.apps.get_models()
+	# for m in existing_models:
+	# 	MODELS.append((m.__name__, m.__name__))
+	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique name for the Model"))
+	#model = models.CharField(blank=False, null=False, max_length=140, choices=MODELS, help_text=_("Model associated with the form"))
+	is_generic = models.BooleanField(help_text=_("Does the form apply to all instances of an object?"))
+	
+	content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, help_text=_("Model associated with the form"))
+	object_id = models.PositiveIntegerField()
+	content_object = GenericForeignKey("content_type", "object_id")
+
+	def __str__(self):
+		return "{0}".format(self.name)
+
+class FormField(BaseModel):
+	"""
+	Model representing a column/field in a FormType
+	"""
+	FIELD_TYPES = []
+	for itm in FieldTypeEnum:
+		FIELD_TYPES.append((itm.value, itm.value))
+
+	form_type = models.ForeignKey(FormType, on_delete=models.CASCADE)
+	label = models.CharField(blank=False, null=False, max_length=140, help_text=_("Field Label"))
+	field_type = models.CharField(blank=False, null=False, max_length=140, choices=FIELD_TYPES, help_text=_("Type of field"))
+	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique identifier for the field"))
+	options = models.TextField(help_text=_("For Select, enter list of Options, each on a new line."))
+	default = models.TextField(help_text=_("Default value for the field"))
+	description = models.TextField(help_text=_("Text to be displayed as help"))
+	required = models.BooleanField(help_text=_("Is the field mandatory"))
+	hidden = models.BooleanField(help_text=_("Is the field hidden?"))
+	read_only = models.BooleanField(help_text=_("Is the field read-only?"))
