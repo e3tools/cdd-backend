@@ -36,6 +36,25 @@ class FormTypeListView(PageMixin, LoginRequiredMixin, generic.ListView):
         context['form'] = FormTypeForm()
         return context
 
+class FormFieldListView(PageMixin, LoginRequiredMixin, generic.ListView):
+    model = FormType
+    queryset = FormType.objects.all()
+    template_name = 'form_builder/form_field/list.html'
+    context_object_name = 'form_types'
+    title = gettext_lazy('Form Types')
+    breadcrumb = [{
+            'url': '',
+            'title': title
+        }]
+    
+    def get_queryset(self):
+        return super().get_queryset()
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['form'] = FormTypeForm()
+        return context
+
 class CreateFormTypeView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.FormView):
     template_name = 'form_builder/form_type/create.html'
     title = gettext_lazy("Create Form Type")

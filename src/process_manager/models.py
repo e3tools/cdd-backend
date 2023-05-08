@@ -258,12 +258,13 @@ class FormType(BaseModel):
 	# for m in existing_models:
 	# 	MODELS.append((m.__name__, m.__name__))
 	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique name for the Model"))
+	description = models.TextField(blank=True, null=True, help_text=_("Description of the form"))
 	#model = models.CharField(blank=False, null=False, max_length=140, choices=MODELS, help_text=_("Model associated with the form"))
-	is_generic = models.BooleanField(help_text=_("Does the form apply to all instances of an object?"))
-	
-	content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE, help_text=_("Model associated with the form"))
-	object_id = models.PositiveIntegerField()
-	content_object = GenericForeignKey("content_type", "object_id")
+	# is_generic = models.BooleanField(default=0, help_text=_("Does the form apply to all instances of an object?"))
+	# task = models.ForeignKey(Task, on_delete=models.CASCADE, blank=False, null=False, help_text=_("Task associated with this form"))	
+	# content_type = models.ForeignKey(ContentType, null=True, blank=True, on_delete=models.CASCADE, help_text=_("Model associated with the form"))
+	# object_id = models.PositiveIntegerField(null=True, blank=True)
+	# content_object = GenericForeignKey("content_type", "object_id")
 
 	def __str__(self):
 		return "{0}".format(self.name)
@@ -277,12 +278,12 @@ class FormField(BaseModel):
 		FIELD_TYPES.append((itm.value, itm.value))
 
 	form_type = models.ForeignKey(FormType, on_delete=models.CASCADE)
+	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique identifier for the field"))
 	label = models.CharField(blank=False, null=False, max_length=140, help_text=_("Field Label"))
 	field_type = models.CharField(blank=False, null=False, max_length=140, choices=FIELD_TYPES, help_text=_("Type of field"))
-	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique identifier for the field"))
 	options = models.TextField(help_text=_("For Select, enter list of Options, each on a new line."))
 	default = models.TextField(help_text=_("Default value for the field"))
 	description = models.TextField(help_text=_("Text to be displayed as help"))
-	required = models.BooleanField(help_text=_("Is the field mandatory"))
+	mandatory = models.BooleanField(help_text=_("Is the field mandatory"))
 	hidden = models.BooleanField(help_text=_("Is the field hidden?"))
 	read_only = models.BooleanField(help_text=_("Is the field read-only?"))

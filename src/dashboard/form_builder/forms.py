@@ -11,14 +11,15 @@ class FormTypeForm(forms.Form):
 		"duplicate_form": _("Another form associated with the task is already defined")
 	}
 	name = forms.CharField(max_length=140, help_text=_("Unique name for the Model"))
+	description = forms.CharField()#help_text=_("Description of the form"))
 	#model = models.CharField(blank=False, null=False, max_length=140, choices=MODELS, help_text=_("Model associated with the form"))
-	is_generic = forms.BooleanField(help_text=_("Does the form apply to all instances of an object?"))
-	
-	content_type = forms.ChoiceField()
-	object_id = forms.IntegerField(disabled=True)
-	content_object = forms.ChoiceField(
-		choices=(())
-	) # GenericForeignKey("content_type", "object_id")
+	# is_generic = forms.BooleanField(help_text=_("Does the form apply to all instances of an object?"))
+	# task = forms.ModelChoiceField(queryset=Task.objects.all(), initial=0)
+	# content_type = forms.ChoiceField()
+	# object_id = forms.IntegerField(disabled=True)
+	# content_object = forms.ChoiceField(
+	# 	choices=(())
+	# ) # GenericForeignKey("content_type", "object_id")
 
 	def __init__(self, *args, **kwargs): 
 		"""
@@ -26,28 +27,29 @@ class FormTypeForm(forms.Form):
 		For this project, just limit model to Task, but this can be applied generically to any model
 		"""
 		super().__init__(*args, **kwargs)
-		nsc = NoSQLClient()
-		# Get Models
-		MODELS = []
-		app_models = apps.get_models()
-		for m in app_models:
-			if m.__name__ == "Task":
-				MODELS.append((m.__name__, m.__name__))
+		# nsc = NoSQLClient()
+		# # Get Models
+		# MODELS = []
+		# app_models = apps.get_models()
+		# for m in app_models:
+		# 	if m.__name__ == "Task":
+		# 		MODELS.append((m.__name__, m.__name__))
 
-		self.fields['content_type'].choices = MODELS
-		# Get tasks
-		tasks = Task.objects.all()
-		TASKS = []
-		for t in tasks:
-			TASKS.append((t.id, t.name))
-		self.fields['content_object'].choices = TASKS
+		# self.fields['content_type'].choices = MODELS
+		# # Get tasks
+		# tasks = Task.objects.all()
+		# TASKS = []
+		# for t in tasks:
+		# 	TASKS.append((t.id, t.name))
+		# self.fields['content_object'].choices = TASKS
 
 class UpdateFormTypeForm(forms.ModelForm):
-	name = forms.CharField()
-	is_generic = forms.BooleanField()	
-	content_type = forms.ChoiceField()
-	object_id = forms.IntegerField(disabled=True)
-	content_object = forms.ChoiceField()
+	name = forms.CharField(help_text=_("Name of the form"))
+	description = forms.CharField(help_text=_("Description of the form"))
+	# is_generic = forms.BooleanField()	
+	# content_type = forms.ChoiceField()
+	# object_id = forms.IntegerField(disabled=True)
+	# content_object = forms.ChoiceField()
 	couch_id = forms.CharField(required=False)
 
 	def clean(self):
@@ -58,7 +60,7 @@ class UpdateFormTypeForm(forms.ModelForm):
 
 	class Meta:
 		model = FormType
-		fields = ['name', 'is_generic']
+		fields = ['name', ] #'is_generic']
 
 class FormFieldForm(forms.Form):
 	error_messages = {
@@ -69,7 +71,8 @@ class FormFieldForm(forms.Form):
 	for itm in FieldTypeEnum:
 		FIELD_TYPES.append((itm.value, itm.value))
 
-	task = forms.ChoiceField(help_text=_("Task associated with this Form"))
+	form_type = forms.ModelChoiceField(queryset=FormType.objects.all(), initial=0)
+	#task = forms.ChoiceField(help_text=_("Task associated with this Form"))
 	label = forms.CharField(help_text=_("Field Label"))
 	field_type = forms.ChoiceField(
 		choices=FIELD_TYPES,
