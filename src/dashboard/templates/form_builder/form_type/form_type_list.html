@@ -20,12 +20,12 @@
                         <td>{{ form_type.couch_id}}</td>
                         <td>
                             {% if user.is_superuser or user|has_group:"Admin" %}
-                                <a href="{% url 'dashboard:form_builder:update-form-type' form_type.pk %}"
+                                <a href="{% url 'dashboard:form_builder:update_form_type' form_type.pk %}"
                                     class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
                                     <span class="_web">{% translate 'Edit' %}</span>
                                     <span class="_mobile"><i class="fa fa-edit"></i></span>
                                 </a>
-                                <a href="{% url 'dashboard:form_builder:delete' form-type.pk %}"
+                                <a href="{% url 'dashboard:form_builder:delete_form_type' form_type.pk %}"
                                     class="btn btn-danger btn-sx" title="{% translate 'Delete' %}">
                                     <span class="_web">{% translate 'Delete' %}</span>
                                     <span class="_mobile"><i class="fa fa-trash"></i></span>

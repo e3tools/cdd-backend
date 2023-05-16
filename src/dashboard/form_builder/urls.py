@@ -5,12 +5,12 @@ from dashboard.form_builder import views
 
 app_name = 'form_builder'
 urlpatterns = [
-    path('', views.FormTypeListView.as_view(), name='form-type-list'),
-    path('form-type-list/', views.FormTypeListView.as_view(), name='form-type-list'),
-    path('create-form-type/', views.CreateFormTypeView.as_view(), name='create-form-type'),    
-    path('create-form-type/<int:id>', views.CreateFormTypeView.as_view(), name='create-form-type'),    
-    path('<int:pk>/update-form-type/', views.UpdateFormTypeView.as_view(), name='update'),
-    path('form-type-fields/<int:id>', views.CreateFormTypeView.as_view(), name='form-type-fields'),
+    path('', views.FormTypeListView.as_view(), name='list_form_type'),
+    path('form-types/', views.FormTypeListView.as_view(), name='list_form_type'),
+    path('create-form-type/', views.CreateFormTypeView.as_view(), name='create_form_type'),    
+    path('update-form-type/<int:pk>', views.CreateFormTypeView.as_view(), name='update_form_type'),    
+    path('delete-form-type/<int:pk>', views.UpdateFormTypeView.as_view(), name='delete_form_type'),
+    path('form-fields/<int:id>', views.CreateFormTypeView.as_view(), name='list_form_fields'),
     # path('delete/<int:id>', views.delete, name='delete'),
     # path('MoveUp/<int:id>', views.changeOrderUp, name='MoveUp'),
     # path('MoveDown/<int:id>', views.changeOrderDown, name='MoveDown'),

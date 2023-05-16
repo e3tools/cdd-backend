@@ -67,7 +67,7 @@
                             <td>
                                 
                                 {% if user.is_superuser or user|has_group:"Admin" %}
-                                <a href="{% url 'dashboard:tasks:task_Detail' task.pk %}"   
+                                <a href="{% url 'dashboard:tasks:task_detail' task.pk %}"   
                                     class="btn btn-primary btn-xs" title="{% translate 'View' %}">
                                     <span class="_web">View</span>
                                     <span class="_mobile"><i class="fa fa-eye"></i></span>

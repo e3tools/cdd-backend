@@ -4,6 +4,7 @@ from no_sql_client import NoSQLClient
 from process_manager.enums import FieldTypeEnum
 from process_manager.models import FormField, FormType, Task
 from django.apps import apps
+from django.forms.models import inlineformset_factory
 
 class FormTypeForm(forms.Form):	
 	error_messages = {
@@ -20,6 +21,8 @@ class FormTypeForm(forms.Form):
 	# content_object = forms.ChoiceField(
 	# 	choices=(())
 	# ) # GenericForeignKey("content_type", "object_id")
+
+	# FormFieldSet = inlineformset_factory(FormType, FormField, fields=['name',])
 
 	def __init__(self, *args, **kwargs): 
 		"""
@@ -62,7 +65,80 @@ class UpdateFormTypeForm(forms.ModelForm):
 		model = FormType
 		fields = ['name', ] #'is_generic']
 
-class FormFieldForm(forms.Form):
+
+class FormFieldForm(forms.ModelForm):
+	class Meta:
+		FIELD_TYPES = []
+		for itm in FieldTypeEnum:
+			FIELD_TYPES.append((itm.value, itm.value))
+
+		model = FormField
+		fields = '__all__'
+		widgets = {
+			# 'form_type': forms.Select(
+			# 	attrs={
+			# 		'class': 'form-control'
+			# 	}
+			# ),
+			'label': forms.TextInput(
+				attrs={
+					'class': 'form-control'
+				}
+			),
+			'field_type': forms.Select(
+				attrs={
+					'class': 'form-control'
+				},
+				choices=FIELD_TYPES
+			),
+			'name': forms.Textarea(
+				attrs={
+					'class': 'form-control'
+				}
+			),
+			'options': forms.Textarea(
+				attrs={
+					'class': 'form-control'
+				}
+			),
+			'default': forms.Textarea(
+				attrs={
+					'class': 'form-control'
+				}
+			),
+			'description': forms.Textarea(
+				attrs={
+					'class': 'form-control'
+				}
+			),
+			'required': forms.BooleanField(
+				# attrs={
+				# 	'class': 'form-control'
+				# }
+			),
+			'hidden': forms.BooleanField(
+				# attrs={
+				# 	'class': 'form-control'
+				# }
+			),
+			'read_only': forms.BooleanField(
+				# attrs={
+				# 	'class': 'form-control'
+				# }
+			),
+		}
+
+FormFieldFormSet = inlineformset_factory(
+    FormType, FormField, form=FormFieldForm,
+    extra=1, can_delete=True, can_delete_extra=True
+)
+# ImageFormSet = inlineformset_factory(
+#     Product, Image, form=ImageForm,
+#     extra=1, can_delete=True, can_delete_extra=True
+# )
+
+class FormFieldForm_Old(forms.Form):
+
 	error_messages = {
 		"duplicate_field": _("Another field with the same name is already defined"),
 		"duplicate_task_form": _("Another form associated with the task is already defined")

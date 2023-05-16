@@ -1,247 +1,146 @@
 {% extends 'layouts/base.html' %}
 {% load static i18n custom_tags %}
 {% load bootstrap4 static i18n %}
-{% include 'add_field.html' %}
-
 
 {% block content %}
-<div class="row">
-    <div class="col-md-12">
-        {% if form.errors %}
-            {% for field in form %}
+<form action="" class="container" method="post" id="task_form">
+    {% csrf_token %}
+
+    <!-- Main Form Start -->
+    <div class="card">
+        <!-- Form Title -->
+        <div class="card-header card-header-secondary">
+            <h4 class="card-title">{% translate 'Add Form' %}</h4>
+        </div>
+
+        <!-- Form Body -->
+        {% for field in form %}
+            <div class="form-group card-body">
+                <label for="">{{ field.label }}</label>
+                {% if field.field.required %}
+                    <span style="color: red;" class="required">*</span>
+                {% endif %}
+                
+                {{ field }}
+
+                {% if field.help_text %}
+                    <small style="color: grey;">{{ field.help_text }}</small>
+                {% endif %}
                 {% for error in field.errors %}
-                    <div class="alert alert-danger">
-                        <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
-                            &times;
-                        </button>
-                        {{ error|escape }}
-                    </div>
+                    <p style="color: red">{{ error }}</p>
                 {% endfor %}
-            {% endfor %}
-            {% for error in form.non_field_errors %}
-                <div class="alert alert-danger">
-                    <button type="button" class="close" data-dismiss="alert" aria-hidden="true">
-                        &times;
-                    </button>
-                    {{ error|escape }}
-                </div>
-            {% endfor %}
-        {% endif %}    
-        <div class="card">
-            <form method="post">
-                {% csrf_token %}
-                <!-- Form meta data -->
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-6">
-                            {% bootstrap_field form.name %}                            
-                        </div>
-                        <div class="col-md-6">                            
-                            {% bootstrap_field form.description %}  
-                        </div>
-                    </div>                    
-                </div>
-                <!-- Add field -->
-
-                <!-- Form Fields List -->
-                <div class="card-body table-responsive">
-                    <div class="row">
-                        <div id="spin" class="overlay">
-                            <i class="fa fa-2x fa-sync-alt fa-spin"></i>
-                        </div>
-                    </div> 
-                    {% if user.is_superuser or user|has_group:"Admin" %} 
-                        <div class="float-right mb-3">
-                            <button type="button" class="btn btn-primary btn-sm rounded-xl" 
-                                    data-toggle="modal" data-target="#add-form-field-dialog">
-                                    <i class="fa fa-plus mr-2"></i>
-                                {% translate 'Add Field' %}
-                            </button>
-                            <a href="{% url 'dashboard:projects:create' %}"
-                            class="btn btn-primary btn-sm rounded-xl">
-                                <i class="fa fa-plus mr-2"></i>
-                                {% translate 'Add Field' %}
-                            </a>
-                        </div>
-                    {% endif %}
-                    <div>
-                        <table id="form-fields-list" class="table">
-                            <thead>
-                                <tr>
-                                    <th>{% translate '' %}</th>
-                                    <th>{% translate 'Label' %}</th>
-                                    <th>{% translate 'Type' %}</th>
-                                    <th>{% translate 'Name' %}</th>
-                                    <th>{% translate 'Mandatory' %}</th>
-                                    <th>{% translate 'Options' %}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for fld in form_type.form_fields %}
-                                    <tr>
-                                        <td>{{ fld.idx }}</td>
-                                        <td>{{ fld.label }}</td>
-                                        <td>{{ fld.field_type }}</td>
-                                        <td>{{ fld.name }}</td>
-                                        <td>{{ fld.mandatory }}</td>
-                                        <td>{{ fld.options }}</td>
-                                    </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card-footer">
-                    <button id="submit" type="submit" class="btn btn-primary btn-sm rounded-xl">
-                        {% translate "SAVE" %}
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+        {% endfor %}
     </div>
-</div>
 
-<div class="modal fade" id="add-form-field-dialog" tabindex="-1" role="dialog" aria-labelledby="modalTitle" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <!-- Header -->
-            <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">{% translate 'Add Form Field' %}</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close' %}">
-                    <span aria-hidden="true">&times;</span>
-                </button>
+    <!-- Main Form End -->
+
+    <!-- Inline form for FormFields start -->
+
+    <!-- EXPLAINING with named_formsets.form_fields as formset -->
+    <!-- Note: named_formsets is used in get_context_data function in views.py -->
+    <!-- Note: here form_fields is our FormFieldFormSet name, used in get_named_formsets function in views.py -->
+    {% with named_formsets.form_fields as formset %}
+        {{ formset.management_form }}
+
+        <script type="text/html" id="form_fields-template"> //id="inlineformsetname-template"            
+            <tr id="form_fields-__prefix__" class="hide_all"> //id="inlineformsetname-__prefix__"
+                {% for fields in formset.empty_form.hidden_fields %}
+                    {{ fields }}
+                {% endfor %}
+
+                {% for fields in formset.empty_form.visible_fields %}
+                    <td>{{ fields }}</td>
+                {% endfor %}
+            </tr>
+        </script>
+
+        <div class="table-responsive card mt-4">
+            <div class="card-header card-header-secondary">
+                <h4 class="card-title">{% translate 'Add Field' %}</h4>
             </div>
 
-            <!-- Body -->
-            <div class="modal-body">
-                <form class="was-validated"> 
-                    <div class="row">
-                        <div class="col-md-6">
-                             <div class="form-group">
-                                <label for="label" class="col-form-label">{% translate 'Label' %}</label>
-                                <input type="text" class="form-control" id="label" required>
-                                <div class="invalid-feedback">
-                                    {% translate 'This field is required' %}
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="name" class="col-form-label">{% translate 'Name' %}</label>
-                                <input type="text" class="form-control" id="name" required>
-                                <div class="invalid-feedback">
-                                    {% translate 'This field is required' %}
-                                </div>
-                            </div>
-                            <div class="form-group">
-                                <label for="field_type" class="col-form-label">{% translate 'Type' %}</label>
-                                <!-- <input type="select" class="form-control" id="field_type"> -->
-                                <select class="form-control" id="field_type" style="width:100%" required>
-                                    <option>Data</option>
-                                    <option>Checkbox</option>
-                                    <option>Integer</option>
-                                    <option>Float</option>
-                                    <option>Text</option>
-                                  </select>
-                                <div class="invalid-feedback">
-                                    {% translate 'This field is required' %}
-                                </div>
-                            </div>
-                            <div class="form-group form-check">
-                                <input type="checkbox" class="form-control" id="mandatory">
-                                <label for="mandatory" class="col-form-label">{% translate 'Mandatory' %}</label>                                
-                            </div>
-                            <div class="form-group form-check">
-                                <input type="checkbox" class="form-check-input" id="hidden">
-                                <label for="hidden" class="col-form-label">{% translate 'Hidden' %}</label>
-                            </div>
-                            <div class="form-group form-check">
-                                <input type="checkbox" class="form-check-input" id="readonly">
-                                <label for="readonly" class="col-form-label">{% translate 'Readonly' %}</label>                                
-                            </div>                           
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="options" class="col-form-label">{% translate 'Options' %}</label>
-                                <textarea class="form-control" id="options" rows="4"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="default" class="col-form-label">{% translate 'Default' %}</label>
-                                <textarea class="form-control" id="default" rows="4"></textarea>
-                            </div>
-                            <div class="form-group">
-                                <label for="description" class="col-form-label">{% translate 'Description' %}</label>
-                                <textarea class="form-control" id="description" rows="4"></textarea>
-                            </div>                            
-                        </div>
-                    </div>                        
-                    <div class="row">
-                        <div class="col-md-12 text-right">
-                            <button type="button" class="btn btn-secondary mr-2" data-dismiss="modal">{% translate 'Close' %}</button>
-                            <button id="submit" type="submit" class="btn btn-primary ml-2">{% translate 'Save' %}</button> 
-                        </div>
-                    </div>
-                </form>               
-            </div>
+            <table class="table card-body">
+                <thead class="text-secondary">
+                    <th>{% translate 'Label' %} <span style="color: red">*</span></th>
+                    <th>{% translate 'Name' %} <span style="color: red">*</span></th>
+                </thead>
+                <tbody id="form_fields">
+                    <!-- formset non_form errors -->
+                    {% for error in formset.non_form_errors %}
+                        <span style="color: red">{{ error }}</span>
+                    {% endfor %}
 
-            <!-- Footer -->
-            <div class="modal-footer">
-                <!-- <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Close' %}</button>
-                <button type="button" class="btn btn-primary">{% translate 'Save' %}</button> -->
-            </div>
+                    {% for formss in formset %}
+                        {{ formss.management_form }}
+                        <tr id="form_field-{{ forloop.counter }}" class="hide_all">
+                            {{ formss.id }}
+                            {% for field in formss.visible_fields %}
+                                <td>
+                                    {{field}}
+                                    {% for error in field.errors %}
+                                        <span style="color: red;">{{ error }}</span>
+                                    {% endfor }
+
+                                    {% comment %} {{ field.DELETE }} {% endcomment %}
+                                </td>
+                            {% endfor %}
+                            {% comment %} for delete {% endcomment %}
+                            {% if formss.instance.pk %}
+                                <button type="button" class="btn btn danger" data-toggle="modal" data-target="#modal{{formss.instance.pk}}">
+                                    {% translate 'DELETE' %}
+                                </button>
+
+                                <!-- Modal -->
+                                <div class="modal fade" id="modal{{formss.instance.pk}}" tabindex="-1" role="dialog" aria-labelledby="modalLabel{{formss.instance.pk}}" aria-hidden="true">
+                                    <div class="modal-dialog" role="document">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="modalLabel{{formss.instance.pk}}">{% translate 'Delete this field?'%}</h5>
+                                                <button type="button" class="close" data-dismiss="modal" aria-label="{% translate 'Close'%}">
+                                                    <span aria-hidden="true">&times;</span>
+                                                </button>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <a href="{% url 'dashboard:form_builder' formss.instance.pk %}" type="button" class="btn btn-primary">{% translate 'Yes, Delete' %}</a>
+                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">{% translate 'Close' %}</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </tr>                        
+                    {% endfor %}
+                </tbody>                
+            </table>
+            <a href="#" id="add-formfield-button" class="btn btn-secondary add-form-field">{% translate 'Add More'%}</a>
         </div>
+    {% endwith %}
+
+    <!-- inline FormFields form end -->
+    <div class="form-group">
+        <button type="submit" class="btn btn-secondary btn-block"></button>
     </div>
-</div>
+
+    <!-- Inline form for FormFields end-->
+</form>
+
+<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+
+<script>
+    $(document).ready(function() {
+        // when user clicks add more btn of form fields
+        $(".add-form-field").click(function(ev){
+            ev.preventDefault();
+            var count = $('#form_fields').children().length;
+            var tplMarkup = $('#form_fields-template').html();
+            var compiledTpl = tplMarkup.replace(/__prefix__/g, count);
+            $('#form_fields').append(compiledTpl);
+
+            // update form count
+            $("#id_form_fields-TOTAL_FORMS").attr('value', count+1);
+        });
+    });
+</script>
 
 {% endblock content %}
-
-{% block javascript %}
-    {{ block.super }}
-
-    <script type="text/javascript">
-        var form_type = "";
-        let spin = $("#spin");
-        let form_fields = $("#form-field-list");
-
-        function loadFormFields(form_type=0) {
-            spin.show();
-            $.ajax({
-                type: "GET",
-                url: "{% url 'dashboard:form_builder:form-type-fields' 1 %}",
-                data: {},
-                success: function(response) {
-                    spin.hide();
-                    form_fields.html(response);
-                },
-                error: function(data){
-                    spin.hide();
-                    alert(error_server_message + "Error " + data.status);
-                }
-            });            
-        };
-        loadFormFields(1);
-
-        function addRow() {
-
-        }
-
-
-        (function () {
-            'use strict'
-            // Fetch all the forms we want to apply custom Bootstrap validation styles to
-            var forms = document.querySelectorAll('.needs-validation');
-            // Loop over them and prevent submission
-            Array.prototype.slice.call(forms)
-                .forEach(function (form) {
-                    form.addEventListener('submit', function (event) {
-                        if (!form.checkValidity()) {
-                            event.preventDefault()
-                            event.stopPropagation()
-                        }
-                        form.classList.add('was-validated')
-                    }, false);
-                })
-        })()
-
-    </script>
-
-{% endblock %}
