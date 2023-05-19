@@ -6,7 +6,7 @@ from process_manager.models import FormField, FormType, Task
 from django.apps import apps
 from django.forms.models import inlineformset_factory
 
-class FormTypeForm(forms.Form):	
+class FormTypeForm(forms.ModelForm):	
 	error_messages = {
 		"duplicate_field": _("Another field with the same name is already defined"),
 		"duplicate_form": _("Another form associated with the task is already defined")
@@ -46,6 +46,22 @@ class FormTypeForm(forms.Form):
 		# 	TASKS.append((t.id, t.name))
 		# self.fields['content_object'].choices = TASKS
 
+	class Meta:
+		model = FormType
+		fields = ['name', 'description']
+		widgets = {
+			'name': forms.TextInput(
+				attrs={
+					'class': 'form-control'
+				}
+			),
+			'description': forms.TextInput(
+				attrs={
+					'class': 'form-control'
+				}
+			)
+		}
+
 class UpdateFormTypeForm(forms.ModelForm):
 	name = forms.CharField(help_text=_("Name of the form"))
 	description = forms.CharField(help_text=_("Description of the form"))
@@ -63,7 +79,7 @@ class UpdateFormTypeForm(forms.ModelForm):
 
 	class Meta:
 		model = FormType
-		fields = ['name', ] #'is_generic']
+		fields = ['name'] #'is_generic']
 
 
 class FormFieldForm(forms.ModelForm):
@@ -73,7 +89,7 @@ class FormFieldForm(forms.ModelForm):
 			FIELD_TYPES.append((itm.value, itm.value))
 
 		model = FormField
-		fields = '__all__'
+		fields = ['label', 'field_type', 'name']
 		widgets = {
 			# 'form_type': forms.Select(
 			# 	attrs={
@@ -91,41 +107,41 @@ class FormFieldForm(forms.ModelForm):
 				},
 				choices=FIELD_TYPES
 			),
-			'name': forms.Textarea(
+			'name': forms.TextInput(
 				attrs={
 					'class': 'form-control'
 				}
 			),
-			'options': forms.Textarea(
-				attrs={
-					'class': 'form-control'
-				}
-			),
-			'default': forms.Textarea(
-				attrs={
-					'class': 'form-control'
-				}
-			),
-			'description': forms.Textarea(
-				attrs={
-					'class': 'form-control'
-				}
-			),
-			'required': forms.BooleanField(
-				# attrs={
-				# 	'class': 'form-control'
-				# }
-			),
-			'hidden': forms.BooleanField(
-				# attrs={
-				# 	'class': 'form-control'
-				# }
-			),
-			'read_only': forms.BooleanField(
-				# attrs={
-				# 	'class': 'form-control'
-				# }
-			),
+			# 'options': forms.Textarea(
+			# 	attrs={
+			# 		'class': 'form-control'
+			# 	}
+			# ),
+			# 'default': forms.Textarea(
+			# 	attrs={
+			# 		'class': 'form-control'
+			# 	}
+			# ),
+			# 'description': forms.Textarea(
+			# 	attrs={
+			# 		'class': 'form-control'
+			# 	}
+			# ),
+			# 'required': forms.BooleanField(
+			# 	# attrs={
+			# 	# 	'class': 'form-control'
+			# 	# }
+			# ),
+			# 'hidden': forms.BooleanField(
+			# 	# attrs={
+			# 	# 	'class': 'form-control'
+			# 	# }
+			# ),
+			# 'read_only': forms.BooleanField(
+			# 	# attrs={
+			# 	# 	'class': 'form-control'
+			# 	# }
+			# ),
 		}
 
 FormFieldFormSet = inlineformset_factory(

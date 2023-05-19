@@ -15,20 +15,24 @@
 
         <!-- Form Body -->
         {% for field in form %}
-            <div class="form-group card-body">
-                <label for="">{{ field.label }}</label>
-                {% if field.field.required %}
-                    <span style="color: red;" class="required">*</span>
-                {% endif %}
-                
-                {{ field }}
+            <div class="form-group card-body2">
+                {% bootstrap_field field show_label=True %}
 
-                {% if field.help_text %}
-                    <small style="color: grey;">{{ field.help_text }}</small>
-                {% endif %}
-                {% for error in field.errors %}
-                    <p style="color: red">{{ error }}</p>
-                {% endfor %}
+                {% comment %}
+                    <label for="">{{ field.label }}</label>
+                    {% if field.field.required %}
+                        <span style="color: red;" class="required">*</span>
+                    {% endif %}
+                    
+                    {{ field }}
+
+                    {% if field.help_text %}
+                        <small style="color: grey;">{{ field.help_text }}</small>
+                    {% endif %}
+                    {% for error in field.errors %}
+                        <p style="color: red">{{ error }}</p>
+                    {% endfor %}
+                {% endcomment %}
             </div>
         {% endfor %}
     </div>
@@ -60,10 +64,18 @@
                 <h4 class="card-title">{% translate 'Add Field' %}</h4>
             </div>
 
-            <table class="table card-body">
+            <table class="table card-body text-left">
                 <thead class="text-secondary">
-                    <th>{% translate 'Label' %} <span style="color: red">*</span></th>
-                    <th>{% translate 'Name' %} <span style="color: red">*</span></th>
+                    {% for formss in formset %}
+                        {% for field in formss.visible_fields %}
+                            <th>
+                                {{ field.label_tag }}
+                                {% if field.field.required %}
+                                    <span style="color: red">*</span>
+                                {% endif %}
+                            </th>                         
+                        {% endfor %}
+                    {% endfor %}
                 </thead>
                 <tbody id="form_fields">
                     <!-- formset non_form errors -->
@@ -76,11 +88,15 @@
                         <tr id="form_field-{{ forloop.counter }}" class="hide_all">
                             {{ formss.id }}
                             {% for field in formss.visible_fields %}
-                                <td>
-                                    {{field}}
-                                    {% for error in field.errors %}
-                                        <span style="color: red;">{{ error }}</span>
-                                    {% endfor }
+                                <td>                                    
+                                    {% bootstrap_field field show_label=False %}
+
+                                    {% comment %}
+                                     {{field}}
+                                        {% for error in field.errors %}
+                                            <span style="color: red;">{{ error }}</span>
+                                        {% endfor %}
+                                     {% endcomment %}                                   
 
                                     {% comment %} {{ field.DELETE }} {% endcomment %}
                                 </td>
@@ -119,7 +135,7 @@
 
     <!-- inline FormFields form end -->
     <div class="form-group">
-        <button type="submit" class="btn btn-secondary btn-block"></button>
+        <button type="submit" class="btn btn-secondary btn-block">{% translate 'Submit' %}</button>
     </div>
 
     <!-- Inline form for FormFields end-->

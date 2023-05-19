@@ -5,7 +5,8 @@ from process_manager.enums import FieldTypeEnum
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.auth import get_user_model
-
+from django.forms.models import model_to_dict
+from rest_framework import serializers
 # Create your models here.
 # The project object on couch looks like this
 # {
@@ -269,6 +270,17 @@ class FormType(BaseModel):
 	def __str__(self):
 		return "{0}".format(self.name)
 
+	def _get_json_data(self):
+		"""https://stackoverflow.com/questions/3535977/can-model-properties-be-displayed-in-a-template"""
+		# get FormFields
+		fields = FormField.objects.all(form_type=self)
+		dct = []
+		for fld in fields:			
+			dct.append(model_to_dict(fld))
+		return u'%s %s' % (self.name, self.description)
+
+	json_data = property(_get_json_data)
+
 class FormField(BaseModel):
 	"""
 	Model representing a column/field in a FormType
@@ -281,9 +293,14 @@ class FormField(BaseModel):
 	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique identifier for the field"))
 	label = models.CharField(blank=False, null=False, max_length=140, help_text=_("Field Label"))
 	field_type = models.CharField(blank=False, null=False, max_length=140, choices=FIELD_TYPES, help_text=_("Type of field"))
-	options = models.TextField(help_text=_("For Select, enter list of Options, each on a new line."))
-	default = models.TextField(help_text=_("Default value for the field"))
-	description = models.TextField(help_text=_("Text to be displayed as help"))
-	mandatory = models.BooleanField(help_text=_("Is the field mandatory"))
-	hidden = models.BooleanField(help_text=_("Is the field hidden?"))
-	read_only = models.BooleanField(help_text=_("Is the field read-only?"))
+
+	def to_dict(self):
+		from process_manager.serializers import FormFieldSerializer
+		return FormFieldSerializer(self).data
+
+	# options = models.TextField(help_text=_("For Select, enter list of Options, each on a new line."))
+	# default = models.TextField(help_text=_("Default value for the field"))
+	# description = models.TextField(help_text=_("Text to be displayed as help"))
+	# mandatory = models.BooleanField(help_text=_("Is the field mandatory"))
+	# hidden = models.BooleanField(help_text=_("Is the field hidden?"))
+	# read_only = models.BooleanField(help_text=_("Is the field read-only?"))
