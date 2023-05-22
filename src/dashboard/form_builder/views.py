@@ -22,9 +22,9 @@ from authentication.permissions import (
 class FormTypeListView(PageMixin, LoginRequiredMixin, generic.ListView):
     model = FormType
     queryset = FormType.objects.all()
-    template_name = 'form_builder/form_type/list.html'
-    context_object_name = 'form_types'
-    title = gettext_lazy('Form Types')
+    template_name = 'form_builder/form/list.html'
+    context_object_name = 'forms'
+    title = gettext_lazy('Forms')
     breadcrumb = [{
             'url': '',
             'title': title
@@ -33,35 +33,45 @@ class FormTypeListView(PageMixin, LoginRequiredMixin, generic.ListView):
     def get_queryset(self):
         return super().get_queryset()
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        # context['form'] = FormTypeForm()
-        return context
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     # context['form'] = FormTypeForm()
+    #     return context
 
-class FormTypeListView_OLD(PageMixin, LoginRequiredMixin, generic.ListView):
-    model = FormType
-    queryset = FormType.objects.all()
-    template_name = 'form_builder/form_type/list.html'
-    context_object_name = 'form_types'
-    title = gettext_lazy('Form Types')
-    breadcrumb = [{
-            'url': '',
-            'title': title
-        }]
-    
+class FormTypeListTableView(LoginRequiredMixin, generic.ListView):
+    template_name = 'form_builder/form/form_list.html'
+    context_object_name = 'forms'
+
+    def get_results(self):        
+        return list(FormType.objects.all())
+
     def get_queryset(self):
-        return super().get_queryset()
+        return self.get_results()
+
+# class FormTypeListView_OLD(PageMixin, LoginRequiredMixin, generic.ListView):
+#     model = FormType
+#     queryset = FormType.objects.all()
+#     template_name = 'form_builder/form_type/list.html'
+#     context_object_name = 'forms'
+#     title = gettext_lazy('Forms')
+#     breadcrumb = [{
+#             'url': '',
+#             'title': title
+#         }]
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['form'] = FormTypeForm()
-        return context
+#     def get_queryset(self):
+#         return super().get_queryset()
+    
+#     def get_context_data(self, **kwargs):
+#         context = super().get_context_data(**kwargs)
+#         context['form'] = FormTypeForm()
+#         return context
 
 class FormFieldListView(PageMixin, LoginRequiredMixin, generic.ListView):
     model = FormType
     queryset = FormType.objects.all()
     template_name = 'form_builder/form_field/list.html'
-    context_object_name = 'form_types'
+    context_object_name = 'forms'
     title = gettext_lazy('Form Types')
     breadcrumb = [{
             'url': '',
@@ -82,7 +92,7 @@ class FormTypeInline():
     """
     form_class = FormTypeForm
     model = FormType
-    template_name = 'form_builder/form_type/create.html'
+    template_name = 'form_builder/form/create.html'
 
     def form_valid(self, form):
         named_formsets = self.get_named_formsets()
@@ -98,8 +108,9 @@ class FormTypeInline():
                 formset_save_func(formset)
             else:
                 formset.save()
+        return redirect("dashboard:form_builder:list")
     
-    def formset_formfields_valid(self, formset):
+    def formset_form_fields_valid(self, formset):
         """
         Hook for custom formset saving. It is useful if you have multiple formsets
         So in case you have another formset, just declare another formset_{FORMSET}_valid method
@@ -111,7 +122,7 @@ class FormTypeInline():
             obj.delete()
         for form_field in form_fields:
             # assign parent
-            form_field.form_type = self.object
+            form_field.form = self.object
             form_field.save()
 
 class CreateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.FormView):
@@ -120,13 +131,13 @@ class CreateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPer
     https://www.imagescape.com/blog/multipage-forms-django/
     https://www.letscodemore.com/blog/django-inline-formset-factory-with-examples/
     """
-    template_name = 'form_builder/form_type/create.html'
+    template_name = 'form_builder/form/create.html'
     title = gettext_lazy("Create Form Type")
-    active_level1 = "form_types"
+    active_level1 = "forms"
     form_class = FormTypeForm
-    success_url = reverse_lazy('dashboard:form_builder:list_form_type')
+    success_url = reverse_lazy('dashboard:form_builder:list')
     breadcrumb = [{
-        'url': reverse_lazy('dashboard:form_builder:list_form_type'),
+        'url': reverse_lazy('dashboard:form_builder:list'),
         'title': gettext_lazy('Form Types')
     },
     {
@@ -173,14 +184,14 @@ class CreateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPer
     #     form_fields = []
     #     if data['fields']:
     #         form_fields = data['fields']
-    #     form_type = FormType(
+    #     my_form = FormType(
     #         name=data['name'],
     #         is_generic=data['is_generic'],
     #         content_type=data['content_type'],
     #         content_object=data['content_object']
     #     )
-    #     form_type.save()
-    #     return super().form_valid(form)
+    #     my_form.save()
+    #     return super().form_valid(my_form)
 
 class CreateFormTypeView_OLD(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.FormView):
     """
@@ -188,14 +199,14 @@ class CreateFormTypeView_OLD(PageMixin, LoginRequiredMixin, AdminPermissionRequi
     https://www.imagescape.com/blog/multipage-forms-django/
     https://www.letscodemore.com/blog/django-inline-formset-factory-with-examples/
     """
-    template_name = 'form_builder/form_type/create.html'
-    title = gettext_lazy("Create Form Type")
-    active_level1 = "form_types"
+    template_name = 'form_builder/form/create.html'
+    title = gettext_lazy("Create Form")
+    active_level1 = "forms"
     form_class = FormTypeForm
-    success_url = reverse_lazy('dashboard:form_builder:list_form_type')
+    success_url = reverse_lazy('dashboard:form_builder:form_list')
     breadcrumb = [{
-        'url': reverse_lazy('dashboard:form_builder:list_form_type'),
-        'title': gettext_lazy('Form Types')
+        'url': reverse_lazy('dashboard:form_builder:form_list'),
+        'title': gettext_lazy('Forms')
     },
     {
         'url': '',
@@ -238,13 +249,13 @@ class CreateFormTypeView_OLD(PageMixin, LoginRequiredMixin, AdminPermissionRequi
 
 class UpdateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
     model = FormType
-    template_name = 'form_builder/form_type/update.html'
-    title = gettext_lazy('Edit Form Type')
-    active_level1 = 'form_types'
+    template_name = 'form_builder/form/update.html'
+    title = gettext_lazy('Edit Form')
+    active_level1 = 'forms'
     form_class = UpdateFormTypeForm
     breadcrumb = [{
-        'url': reverse_lazy('dashboard:form_types:list'),
-        'title': gettext_lazy('Form Types')
+        'url': reverse_lazy('dashboard:form_builder:list'),
+        'title': gettext_lazy('Forms')
     },
     {
         'url': '',
@@ -267,13 +278,13 @@ class UpdateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPer
 
 class UpdateFormTypeView_OLD(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
     model = FormType
-    template_name = 'form_builder/form_type/update.html'
+    template_name = 'form_builder/form/update.html'
     title = gettext_lazy('Edit Form Type')
-    active_level1 = 'form_types'
+    active_level1 = 'forms'
     form_class = UpdateFormTypeForm
     breadcrumb = [{
-        'url': reverse_lazy('dashboard:form_types:list'),
-        'title': gettext_lazy('Form Types')
+        'url': reverse_lazy('dashboard:form_builder:list_form'),
+        'title': gettext_lazy('Forms')
     },
     {
         'url': '',

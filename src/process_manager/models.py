@@ -237,6 +237,10 @@ class Task(models.Model):
 		return self
 
 User = get_user_model()
+
+
+		
+
 class BaseModel(models.Model):
 	created_on = models.DateTimeField(auto_now_add=True)
 	created_by = models.ForeignKey(User, null=True, on_delete=models.PROTECT, related_name="%(app_label)s_%(class)s_creator")
@@ -249,23 +253,29 @@ class BaseModel(models.Model):
 	class Meta:
 		abstract = True
 
+	def to_dict(self):
+		"""Return Dict representation of the model
+		"""
+		import pdb; pdb.set_trace()
+		#from process_manager.serializers import FormFieldSerializer
+		#return FormFieldSerializer(self).data
+		# from process_manager.serializers import BaseModelSerializer
+		return BaseModelSerializer(self).data
+
+class BaseModelSerializer(serializers.ModelSerializer):
+	class Meta:
+		model = BaseModel
+		fields = "__all__"
+		#exclude = ["created_on", ""]
+
 # Create your models here.
 class FormType(BaseModel):
 	"""
-	Model representing a Form Type 
+	Model representing a Form 
 	"""
-	# MODELS = [] 
-	# existing_models = django.apps.apps.get_models()
-	# for m in existing_models:
-	# 	MODELS.append((m.__name__, m.__name__))
 	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique name for the Model"))
 	description = models.TextField(blank=True, null=True, help_text=_("Description of the form"))
-	#model = models.CharField(blank=False, null=False, max_length=140, choices=MODELS, help_text=_("Model associated with the form"))
-	# is_generic = models.BooleanField(default=0, help_text=_("Does the form apply to all instances of an object?"))
-	# task = models.ForeignKey(Task, on_delete=models.CASCADE, blank=False, null=False, help_text=_("Task associated with this form"))	
-	# content_type = models.ForeignKey(ContentType, null=True, blank=True, on_delete=models.CASCADE, help_text=_("Model associated with the form"))
-	# object_id = models.PositiveIntegerField(null=True, blank=True)
-	# content_object = GenericForeignKey("content_type", "object_id")
+	couch_id = models.CharField(blank=True, null=True, max_length=140, help_text=_("Related Couchdb id"))
 
 	def __str__(self):
 		return "{0}".format(self.name)
@@ -273,11 +283,13 @@ class FormType(BaseModel):
 	def _get_json_data(self):
 		"""https://stackoverflow.com/questions/3535977/can-model-properties-be-displayed-in-a-template"""
 		# get FormFields
-		fields = FormField.objects.all(form_type=self)
+		fields = FormField.objects.filter(form=self)
 		dct = []
-		for fld in fields:			
-			dct.append(model_to_dict(fld))
-		return u'%s %s' % (self.name, self.description)
+		delete_keys = ['created_by', 'updated_by']
+		for fld in fields:
+			import pdb;pdb.set_trace()
+			dct.append(model_to_dict(fld, exclude=delete_keys))
+		return str(dct)
 
 	json_data = property(_get_json_data)
 
@@ -289,14 +301,19 @@ class FormField(BaseModel):
 	for itm in FieldTypeEnum:
 		FIELD_TYPES.append((itm.value, itm.value))
 
-	form_type = models.ForeignKey(FormType, on_delete=models.CASCADE)
+	form = models.ForeignKey(FormType, on_delete=models.CASCADE)
 	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique identifier for the field"))
 	label = models.CharField(blank=False, null=False, max_length=140, help_text=_("Field Label"))
 	field_type = models.CharField(blank=False, null=False, max_length=140, choices=FIELD_TYPES, help_text=_("Type of field"))
 
-	def to_dict(self):
-		from process_manager.serializers import FormFieldSerializer
-		return FormFieldSerializer(self).data
+	def to_dict2(self):
+		"""Return Dict representation of the model
+		"""
+		import pdb; pdb.set_trace()
+		#from process_manager.serializers import FormFieldSerializer
+		#return FormFieldSerializer(self).data
+		from process_manager.serializers import BaseModelSerializer
+		return BaseModelSerializer(self).data
 
 	# options = models.TextField(help_text=_("For Select, enter list of Options, each on a new line."))
 	# default = models.TextField(help_text=_("Default value for the field"))

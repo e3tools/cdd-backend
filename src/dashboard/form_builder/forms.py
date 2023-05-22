@@ -12,7 +12,8 @@ class FormTypeForm(forms.ModelForm):
 		"duplicate_form": _("Another form associated with the task is already defined")
 	}
 	name = forms.CharField(max_length=140, help_text=_("Unique name for the Model"))
-	description = forms.CharField()#help_text=_("Description of the form"))
+	description = forms.Textarea() #help_text=_("Description of the form")) #help_text=_("Description of the form"))
+	couch_id = forms.CharField(required=False, disabled=True, help_text=_("Unique name for the Model"))
 	#model = models.CharField(blank=False, null=False, max_length=140, choices=MODELS, help_text=_("Model associated with the form"))
 	# is_generic = forms.BooleanField(help_text=_("Does the form apply to all instances of an object?"))
 	# task = forms.ModelChoiceField(queryset=Task.objects.all(), initial=0)
@@ -55,9 +56,15 @@ class FormTypeForm(forms.ModelForm):
 					'class': 'form-control'
 				}
 			),
-			'description': forms.TextInput(
+			'description': forms.Textarea(
 				attrs={
 					'class': 'form-control'
+				}
+			),
+			'couch_id': forms.TextInput(
+				attrs={
+					'class': 'form-control',
+					'readonly': 'True'
 				}
 			)
 		}
