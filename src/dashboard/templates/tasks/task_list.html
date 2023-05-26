@@ -29,12 +29,12 @@
                         {% if user.is_superuser or user|has_group:"Admin" %}
                         <a href="{% url 'dashboard:tasks:update' task.pk %}"
                             class="btn btn-primary btn-xs" title="{% translate 'Edit' %}">
-                            <span class="_web">Edit</span>
+                            <span class="_web">{% translate 'Edit' %}</span>
                             <span class="_mobile"><i class="fa fa-user"></i></span>
                         </a>
                         <a href="{% url 'dashboard:tasks:delete' task.pk %}"
                             class="btn btn-sm btn-danger" title="{% translate 'Delete' %}">
-                            <span class="_web">Delete</span>
+                            <span class="_web">{% translate 'Delete' %}</span>
                             <span class="_mobile"><i class="fa fa-edit"></i></span>
                         </a>
                         {% endif %}

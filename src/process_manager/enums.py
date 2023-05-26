@@ -39,7 +39,12 @@ class FieldTypeEnum(enum.Enum):
 	"""
 	Shows models records
 	"""
-	LINK = "Link"
+	# LINK = "Link"
+
+	"""
+	Dropdown list
+	"""
+	SELECT = "Select"
 
 	"""
 	Small text allowing new lines
@@ -54,9 +59,14 @@ class FieldTypeEnum(enum.Enum):
 	"""
 	Column break. Adds a column to a view
 	"""
-	COLUMN_BREAK = "Column Break"
+	# COLUMN_BREAK = "Column Break"
 
 	"""
 	Section break. Adds a field set
 	"""
-	SECTION_BREAK = "Section Break"
+	# SECTION_BREAK = "Section Break"
+
+	"""
+	Supports Page Break
+	"""
+	PAGE_BREAK = "Page Break"

@@ -188,15 +188,17 @@ class Task(models.Model):
 	order = models.IntegerField()
 	form = models.JSONField(null=True, blank=True)
 	couch_id = models.CharField(max_length=255, blank=True)
+	form_type = models.ForeignKey("FormType", on_delete=models.CASCADE, blank=False, null=True)
 
 	def __str__(self):
 		return self.phase.name + '-' + self.activity.name + '-' + self.name
 
 	def save(self, *args, **kwargs):
 		super().save(*args, **kwargs)
-		form = []
-		if self.form:
-			form = self.form
+		# form = []
+		# if self.form:
+		# 	form = self.form
+		form_fields = self.form_type.json_schema
 		data = {
 			"type": "task",
 			"project_id": self.activity.phase.project.couch_id,
@@ -211,7 +213,7 @@ class Task(models.Model):
 			"completed_date": "",
 			"capacity_attachments": [],
 			"attachments": [],
-			"form": form,
+			"form": form_fields, # form,
 			"form_response": [],
 			"sql_id": self.id
 		}
@@ -238,9 +240,6 @@ class Task(models.Model):
 
 User = get_user_model()
 
-
-		
-
 class BaseModel(models.Model):
 	created_on = models.DateTimeField(auto_now_add=True)
 	created_by = models.ForeignKey(User, null=True, on_delete=models.PROTECT, related_name="%(app_label)s_%(class)s_creator")
@@ -248,25 +247,31 @@ class BaseModel(models.Model):
 	updated_by = models.ForeignKey(User, null=True, on_delete=models.PROTECT, related_name="%(app_label)s_%(class)s_updater")
 	# is_deleted = models.Boolean(default=False)
 	# deleted_on = models.DateTimeField(null=True)
-	# deleted_by = models.ForeignKey(get_user_model(), null=True)
-	
+	# deleted_by = models.ForeignKey(get_user_model(), null=True)	
 	class Meta:
 		abstract = True
 
-	def to_dict(self):
-		"""Return Dict representation of the model
-		"""
-		import pdb; pdb.set_trace()
-		#from process_manager.serializers import FormFieldSerializer
-		#return FormFieldSerializer(self).data
-		# from process_manager.serializers import BaseModelSerializer
-		return BaseModelSerializer(self).data
+	@classmethod
+	def get_serializer(cls):
+		class BaseSerializer(serializers.ModelSerializer):
+			class Meta:
+				model = cls # tell the serializer about the model class
+				exclude = []
 
-class BaseModelSerializer(serializers.ModelSerializer):
-	class Meta:
-		model = BaseModel
-		fields = "__all__"
-		#exclude = ["created_on", ""]
+		return BaseSerializer #return the class object so we can use this serializer
+
+	def to_dict(cls, exclude_fields=[]):
+		"""Return a dict representation of a model
+
+		Args:
+			exclude_fields (list, optional): List of fields to be excluded from the dict. Defaults to [].
+
+		Returns:
+			dict: Dictionary of the model
+		"""
+		serializer_class = cls.get_serializer()
+		serializer_class.Meta.exclude = exclude_fields
+		return serializer_class(cls).data
 
 # Create your models here.
 class FormType(BaseModel):
@@ -281,16 +286,75 @@ class FormType(BaseModel):
 		return "{0}".format(self.name)
 
 	def _get_json_data(self):
-		"""https://stackoverflow.com/questions/3535977/can-model-properties-be-displayed-in-a-template"""
-		# get FormFields
+		"""Get JSON Format of fields
+		https://stackoverflow.com/questions/3535977/can-model-properties-be-displayed-in-a-template
+
+		Returns:
+			str: String dictionary representation of the model
+		"""
+		# get FormFields linked to the Form
 		fields = FormField.objects.filter(form=self)
 		dct = []
 		delete_keys = ['created_by', 'updated_by']
-		for fld in fields:
-			import pdb;pdb.set_trace()
-			dct.append(model_to_dict(fld, exclude=delete_keys))
+		for fld in fields: 
+			dct.append(fld.to_dict(exclude_fields=delete_keys))
 		return str(dct)
 
+	def _get_json_schema(self):
+		"""Get JSON schema representation of the FormField
+		See https://www.npmjs.com/package/tcomb-json-schema
+			https://gcanti.github.io/resources/json-schema-to-tcomb/playground/playground.html
+		"""
+		type_mapping = {
+			FieldTypeEnum.DATA.value: "string",
+			FieldTypeEnum.CHECK.value: "boolean",
+			FieldTypeEnum.FLOAT.value: "number",
+			FieldTypeEnum.INT.value: "number",
+			FieldTypeEnum.SMALL_TEXT.value: "string",
+			FieldTypeEnum.TEXT.value: "string",	
+			FieldTypeEnum.SELECT.value: "string",				
+		}	 
+		fields = FormField.objects.filter(form=self)
+		dct = {
+				"page": {
+					"type": "object",
+					"properties": {},
+					"required": []
+				},
+				"options": {
+					"fields": {}
+				}
+			}
+		for fld in fields:
+			if fld.field_type == FieldTypeEnum.PAGE_BREAK.value:
+				"""@TODO. Handle paging"""
+				continue
+			dct["options"]["fields"][fld.name] = {
+					"label": fld.label,
+					"help": fld.help_text or "",
+					"i18n": {
+						"optional": "",
+						"required": "*"
+					}
+				}
+
+			
+			if fld.field_type == FieldTypeEnum.SELECT.value:
+				# For select fields, populate options
+				dct["page"]["properties"][fld.name] = {
+					"type": type_mapping[fld.field_type],
+					"enum": '"' + '","'.join(fld.options.splitlines()) + '"'					
+				}
+			else:
+				dct["page"]["properties"][fld.name] = {
+					"type": type_mapping[fld.field_type]
+				}
+
+			if fld.required:
+				dct["page"]["required"].append(fld.name)	
+		return dct 
+
+	json_schema = property(_get_json_schema)
 	json_data = property(_get_json_data)
 
 class FormField(BaseModel):
@@ -305,19 +369,9 @@ class FormField(BaseModel):
 	name = models.CharField(blank=False, null=False, max_length=140, help_text=_("Unique identifier for the field"))
 	label = models.CharField(blank=False, null=False, max_length=140, help_text=_("Field Label"))
 	field_type = models.CharField(blank=False, null=False, max_length=140, choices=FIELD_TYPES, help_text=_("Type of field"))
-
-	def to_dict2(self):
-		"""Return Dict representation of the model
-		"""
-		import pdb; pdb.set_trace()
-		#from process_manager.serializers import FormFieldSerializer
-		#return FormFieldSerializer(self).data
-		from process_manager.serializers import BaseModelSerializer
-		return BaseModelSerializer(self).data
-
-	# options = models.TextField(help_text=_("For Select, enter list of Options, each on a new line."))
 	# default = models.TextField(help_text=_("Default value for the field"))
-	# description = models.TextField(help_text=_("Text to be displayed as help"))
-	# mandatory = models.BooleanField(help_text=_("Is the field mandatory"))
+	help_text = models.CharField(max_length=255, blank=True, null=True, help_text=_("Text to be displayed as help"))
+	required = models.BooleanField(help_text=_("Is the field mandatory"))
+	options = models.TextField(blank=True, null=True, help_text=_("For Select, enter list of Options, each on a new line."))
 	# hidden = models.BooleanField(help_text=_("Is the field hidden?"))
 	# read_only = models.BooleanField(help_text=_("Is the field read-only?"))

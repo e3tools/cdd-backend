@@ -3,7 +3,7 @@ from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from process_manager.models import Phase, Project, Activity, Task
+from process_manager.models import Phase, Project, Activity, Task, FormType
 from no_sql_client import NoSQLClient
 
 class TaskForm(forms.Form):   
@@ -17,7 +17,7 @@ class TaskForm(forms.Form):
     #activity = forms.ChoiceField(choices = [])
     #order = forms.IntegerField()
     #form = forms.JSONField(required=False)
-    
+    form_type = forms.ModelChoiceField(label=_("Form"), queryset=FormType.objects.distinct())
 
     def _post_clean(self):
         super()._post_clean()     
@@ -44,6 +44,7 @@ class UpdateTaskForm(forms.ModelForm):
     #activity = forms.ModelChoiceField(queryset=Activity.objects.distinct())
     #form = forms.JSONField(required=False)
     #order = forms.IntegerField()    
+    form_type = forms.ModelChoiceField(label=_("Form"), queryset=FormType.objects.distinct())
 
     def clean(self):        
         return super().clean()
@@ -54,4 +55,4 @@ class UpdateTaskForm(forms.ModelForm):
 
     class Meta:
         model = Task
-        fields = ['name', 'description'] # specify the fields to be displayed 
+        fields = ['name', 'description', 'form_type'] # specify the fields to be displayed 

@@ -75,9 +75,11 @@ class CreateTaskFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         #project = Project.objects.get(id = data['project'])
         #phase = Phase.objects.get(id = data['phase'])
         activity = Activity.objects.get(id = data['activity'])
-        form = [] 
-        if data['form']:
-            form = data['form']
+        # form = [] 
+        # if data['form']:
+        #     form = data['form']
+        form_type = data['form_type']
+        form_fields = form_type.json_schema
         task = Task(
             name=data['name'], 
             description=data['description'],
@@ -85,8 +87,9 @@ class CreateTaskFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
             phase = activity.phase,
             activity = activity,
             order = data['order'],
-            form = form
-            )
+            form = form_fields,
+            form_type=form_type
+        )
         task.save()        
         return super().form_valid(form)
     
@@ -182,13 +185,20 @@ class UpdateTaskView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin
 
     def form_valid(self, form):
         data = form.cleaned_data
+
+        form_type = data['form_type']
+        form_fields = form_type.json_schema # Get JSON representation of the form
+
         task = form.save(commit=False)
         task.name=data['name'] 
-        task.description=data['description']               
+        task.description=data['description']     
+        task.form_type=form_type
+        task.form = form_fields
         task.save()         
         doc = {
             "name": data['name'],
             "description": data['description'],
+            "form": task.form,
             "sql_id": task.id
         }
         nsc = NoSQLClient()

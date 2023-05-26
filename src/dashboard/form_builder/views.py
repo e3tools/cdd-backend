@@ -132,13 +132,13 @@ class CreateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPer
     https://www.letscodemore.com/blog/django-inline-formset-factory-with-examples/
     """
     template_name = 'form_builder/form/create.html'
-    title = gettext_lazy("Create Form Type")
+    title = gettext_lazy("Create Form")
     active_level1 = "forms"
     form_class = FormTypeForm
     success_url = reverse_lazy('dashboard:form_builder:list')
     breadcrumb = [{
         'url': reverse_lazy('dashboard:form_builder:list'),
-        'title': gettext_lazy('Form Types')
+        'title': gettext_lazy('Forms')
     },
     {
         'url': '',

@@ -56,7 +56,7 @@ class FormTypeForm(forms.ModelForm):
 					'class': 'form-control'
 				}
 			),
-			'description': forms.Textarea(
+			'description': forms.TextInput(
 				attrs={
 					'class': 'form-control'
 				}
@@ -96,7 +96,7 @@ class FormFieldForm(forms.ModelForm):
 			FIELD_TYPES.append((itm.value, itm.value))
 
 		model = FormField
-		fields = ['label', 'field_type', 'name']
+		fields = ['label', 'field_type', 'name', 'required', 'options', 'help_text']
 		widgets = {
 			# 'form_type': forms.Select(
 			# 	attrs={
@@ -119,26 +119,29 @@ class FormFieldForm(forms.ModelForm):
 					'class': 'form-control'
 				}
 			),
-			# 'options': forms.Textarea(
-			# 	attrs={
-			# 		'class': 'form-control'
-			# 	}
-			# ),
+			'options': forms.Textarea(
+				attrs={
+					'class': 'form-control',
+					'rows': 2,
+					'cols': 4
+				}
+			),
 			# 'default': forms.Textarea(
 			# 	attrs={
 			# 		'class': 'form-control'
 			# 	}
 			# ),
-			# 'description': forms.Textarea(
-			# 	attrs={
-			# 		'class': 'form-control'
-			# 	}
-			# ),
-			# 'required': forms.BooleanField(
-			# 	# attrs={
-			# 	# 	'class': 'form-control'
-			# 	# }
-			# ),
+			'required': forms.CheckboxInput(				
+				# attrs={
+				# 	'class': 'form-control'
+				# }
+			),
+			'help_text': forms.TextInput(
+				attrs={
+					'class': 'form-control'
+				}
+			),
+			
 			# 'hidden': forms.BooleanField(
 			# 	# attrs={
 			# 	# 	'class': 'form-control'
