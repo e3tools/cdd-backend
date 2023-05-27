@@ -373,5 +373,10 @@ class FormField(BaseModel):
 	help_text = models.CharField(max_length=255, blank=True, null=True, help_text=_("Text to be displayed as help"))
 	required = models.BooleanField(help_text=_("Is the field mandatory"))
 	options = models.TextField(blank=True, null=True, help_text=_("For Select, enter list of Options, each on a new line."))
+	order = models.PositiveSmallIntegerField(blank=True, default=1, help_text=_("Order in form"))
+	page = models.PositiveSmallIntegerField(blank=False, default=1, help_text=_("Page to appear in form"))
 	# hidden = models.BooleanField(help_text=_("Is the field hidden?"))
 	# read_only = models.BooleanField(help_text=_("Is the field read-only?"))
+
+	class Meta:
+		ordering = ["order"]

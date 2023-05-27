@@ -92,7 +92,7 @@ class FormTypeInline():
     """
     form_class = FormTypeForm
     model = FormType
-    template_name = 'form_builder/form/create.html'
+    template_name = 'form_builder/form/create_update.html'
 
     def form_valid(self, form):
         named_formsets = self.get_named_formsets()
@@ -120,8 +120,9 @@ class FormTypeInline():
         # set in inlineformset_factory func
         for obj in formset.deleted_objects:
             obj.delete()
-        for form_field in form_fields:
+        for i, form_field in enumerate(form_fields):
             # assign parent
+            form_field.order = i+1
             form_field.form = self.object
             form_field.save()
 
@@ -131,7 +132,7 @@ class CreateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPer
     https://www.imagescape.com/blog/multipage-forms-django/
     https://www.letscodemore.com/blog/django-inline-formset-factory-with-examples/
     """
-    template_name = 'form_builder/form/create.html'
+    template_name = 'form_builder/form/create_update.html'
     title = gettext_lazy("Create Form")
     active_level1 = "forms"
     form_class = FormTypeForm
@@ -249,7 +250,7 @@ class CreateFormTypeView_OLD(PageMixin, LoginRequiredMixin, AdminPermissionRequi
 
 class UpdateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
     model = FormType
-    template_name = 'form_builder/form/update.html'
+    template_name = 'form_builder/form/create.html'
     title = gettext_lazy('Edit Form')
     active_level1 = 'forms'
     form_class = UpdateFormTypeForm
