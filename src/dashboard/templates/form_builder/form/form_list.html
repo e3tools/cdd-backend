@@ -7,7 +7,7 @@
                 <tr>
                     <th>{% translate 'Form Name' %}</th>
                     <th>{% translate 'Description' %}</th>
-                    <th>{% translate 'Couch Id' %}</th>
+                    <!-- <th>{% comment %} {% translate 'Couch Id' %} {% endcomment %}</th> -->
                     <th width="20%">{% translate 'Action' %}</th>
                 </tr>
             </thead>
@@ -16,7 +16,7 @@
                     <tr>
                         <td>{{ form.name }}</td>
                         <td>{{ form.description }}</td>                        
-                        <td>{{ form.couch_id }}</td>
+                        <!-- <td>{{ form.couch_id }}</td> -->
                         <td>
                             {% if user.is_superuser or user|has_group:"Admin" %}
                                 <a href="{% url 'dashboard:form_builder:update_form' form.pk %}"

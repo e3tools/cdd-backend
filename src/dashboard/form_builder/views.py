@@ -250,7 +250,7 @@ class CreateFormTypeView_OLD(PageMixin, LoginRequiredMixin, AdminPermissionRequi
 
 class UpdateFormTypeView(FormTypeInline, PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin, generic.UpdateView):
     model = FormType
-    template_name = 'form_builder/form/create.html'
+    template_name = 'form_builder/form/create_update.html'
     title = gettext_lazy('Edit Form')
     active_level1 = 'forms'
     form_class = UpdateFormTypeForm

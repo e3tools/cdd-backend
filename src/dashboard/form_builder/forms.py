@@ -13,7 +13,7 @@ class FormTypeForm(forms.ModelForm):
 	}
 	name = forms.CharField(max_length=140, help_text=_("Unique name for the Model"))
 	description = forms.Textarea() #help_text=_("Description of the form")) #help_text=_("Description of the form"))
-	couch_id = forms.CharField(required=False, disabled=True, help_text=_("Unique name for the Model"))
+	# couch_id = forms.CharField(required=False, disabled=True, help_text=_("Unique name for the Model"))
 	
 	def __init__(self, *args, **kwargs): 
 		"""
@@ -62,7 +62,7 @@ class FormTypeForm(forms.ModelForm):
 class UpdateFormTypeForm(forms.ModelForm):
 	name = forms.CharField(help_text=_("Name of the form"))
 	description = forms.CharField(help_text=_("Description of the form"))
-	couch_id = forms.CharField(required=False)
+	# couch_id = forms.CharField(required=False)
 
 	def clean(self):
 		return super().clean()
