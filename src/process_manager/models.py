@@ -70,12 +70,14 @@ class Phase(models.Model):
 	project = models.ForeignKey("Project", on_delete=models.CASCADE)
 	couch_id = models.CharField(max_length=255, blank=True)
 	order = models.IntegerField()
+	form_type = models.ForeignKey("FormType", on_delete=models.CASCADE, blank=False, null=True)
 
 	def __str__(self):
 		return self.name
 
 	def save(self, *args, **kwargs):
 		super().save(*args, **kwargs)
+		form_fields = self.form_type.json_schema if self.form_type else None
 		data = {
 			"name": self.name,
 			"type": "phase",
@@ -83,7 +85,8 @@ class Phase(models.Model):
 			"order": self.order,
 			"capacity_attachments": [],
 			"project_id": self.project.couch_id,
-			"sql_id": self.id
+			"sql_id": self.id,
+			"form": form_fields
 		}
 		nsc = NoSQLClient()
 		nsc_database = nsc.get_db("process_design")
@@ -128,6 +131,7 @@ class Activity(models.Model):
 	total_tasks = models.IntegerField()
 	order = models.IntegerField()
 	couch_id = models.CharField(max_length=255, blank=True)
+	form_type = models.ForeignKey("FormType", on_delete=models.CASCADE, blank=False, null=True)
 
 	def __str__(self):
 		return self.phase.name + '-' + self.name
@@ -135,6 +139,7 @@ class Activity(models.Model):
 
 	def save(self, *args, **kwargs):
 		super().save(*args, **kwargs)
+		form_fields = self.form_type.json_schema if self.form_type else None
 		data = {
 			"name": self.name,
 			"type": "activity",
@@ -145,8 +150,10 @@ class Activity(models.Model):
 			"phase_id": self.phase.couch_id,
 			"total_tasks": self.total_tasks,
 			"completed_tasks": 0,
-			"sql_id": self.id
+			"sql_id": self.id,
+			"form": form_fields
 		}
+		
 		nsc = NoSQLClient()
 		nsc_database = nsc.get_db("process_design")
 		new_document = nsc_database.get_query_result(
@@ -198,7 +205,7 @@ class Task(models.Model):
 		# form = []
 		# if self.form:
 		# 	form = self.form
-		form_fields = self.form_type.json_schema
+		form_fields = self.form_type.json_schema if self.form_type else None
 		data = {
 			"type": "task",
 			"project_id": self.activity.phase.project.couch_id,
@@ -213,7 +220,7 @@ class Task(models.Model):
 			"completed_date": "",
 			"capacity_attachments": [],
 			"attachments": [],
-			"form": form_fields, # form,
+			"form": form_fields,
 			"form_response": [],
 			"sql_id": self.id
 		}
@@ -326,9 +333,9 @@ class FormType(BaseModel):
 				}
 			}
 		for fld in fields:
-			if fld.field_type == FieldTypeEnum.PAGE_BREAK.value:
-				"""@TODO. Handle paging"""
-				continue
+			# if fld.field_type == FieldTypeEnum.PAGE_BREAK.value:
+			# 	"""@TODO. Handle paging"""
+			# 	continue
 			dct["options"]["fields"][fld.name] = {
 					"label": fld.label,
 					"help": fld.help_text or "",
@@ -337,7 +344,6 @@ class FormType(BaseModel):
 						"required": "*"
 					}
 				}
-
 			
 			if fld.field_type == FieldTypeEnum.SELECT.value:
 				# For select fields, populate options
@@ -373,10 +379,10 @@ class FormField(BaseModel):
 	help_text = models.CharField(max_length=255, blank=True, null=True, help_text=_("Text to be displayed as help"))
 	required = models.BooleanField(help_text=_("Is the field mandatory"))
 	options = models.TextField(blank=True, null=True, help_text=_("For Select, enter list of Options, each on a new line."))
-	order = models.PositiveSmallIntegerField(blank=True, default=1, help_text=_("Order in form"))
+	idx = models.PositiveSmallIntegerField(blank=False, default=1, help_text=_("Order in form"))
 	page = models.PositiveSmallIntegerField(blank=False, default=1, help_text=_("Page to appear in form"))
 	# hidden = models.BooleanField(help_text=_("Is the field hidden?"))
 	# read_only = models.BooleanField(help_text=_("Is the field read-only?"))
 
 	class Meta:
-		ordering = ["order"]
+		ordering = ["idx"]

@@ -3,7 +3,7 @@ from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from process_manager.models import Phase, Project
+from process_manager.models import Phase, Project, FormType
 from no_sql_client import NoSQLClient
 
 class PhaseForm(forms.Form):   
@@ -13,6 +13,7 @@ class PhaseForm(forms.Form):
     #choices = tuple(Project.objects.all().values_list())   
     name = forms.CharField()
     description = forms.CharField()
+    form_type = forms.ModelChoiceField(label=_("Form"), queryset=FormType.objects.distinct())
 
     def _post_clean(self):
         super()._post_clean()     
@@ -33,7 +34,8 @@ class PhaseForm(forms.Form):
 class UpdatePhaseForm(forms.ModelForm):
     #choices = tuple(Project.objects.all().values_list()) 
     name = forms.CharField()
-    description = forms.CharField() 
+    description = forms.CharField()
+    form_type = forms.ModelChoiceField(label=_("Form"), queryset=FormType.objects.distinct())
 
     def clean(self):        
         return super().clean()
@@ -44,4 +46,4 @@ class UpdatePhaseForm(forms.ModelForm):
 
     class Meta:
         model = Phase
-        fields = ['name', 'description'] # specify the fields to be displayed 
+        fields = ['name', 'description', 'form_type'] # specify the fields to be displayed 

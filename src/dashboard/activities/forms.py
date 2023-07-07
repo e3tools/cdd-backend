@@ -3,7 +3,7 @@ from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 
-from process_manager.models import Phase, Project,Activity
+from process_manager.models import Phase, Project,Activity, FormType
 from no_sql_client import NoSQLClient
 
 class ActivityForm(forms.Form):   
@@ -13,6 +13,7 @@ class ActivityForm(forms.Form):
     #choices = tuple(Project.objects.all().values_list())   
     name = forms.CharField()
     description = forms.CharField()
+    form_type = forms.ModelChoiceField(label=_("Form"), queryset=FormType.objects.distinct())
     #project = forms.ChoiceField(choices = [])
     #phase = forms.ChoiceField(choices = [])
     #total_tasks = forms.IntegerField()
@@ -41,6 +42,7 @@ class UpdateActivityForm(forms.ModelForm):
     #choices = tuple(Project.objects.all().values_list()) 
     name = forms.CharField()
     description = forms.CharField()
+    form_type = forms.ModelChoiceField(label=_("Form"), queryset=FormType.objects.distinct())
     #couch_id = forms.CharField(required=False, disabled=True) 
     #phase = forms.ModelChoiceField(queryset=Phase.objects.distinct())
     #total_tasks = forms.IntegerField() 

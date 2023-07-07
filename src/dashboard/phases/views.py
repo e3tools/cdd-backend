@@ -79,6 +79,7 @@ class CreatePhaseFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequired
         phase = Phase(
             name=data['name'], 
             description=data['description'],
+            form_type=data['form_type'],
             project = project,
             order = orderNew)
         phase.save()        
@@ -269,11 +270,15 @@ class UpdatePhaseView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixi
         data = form.cleaned_data
         phase = form.save(commit=False)
         phase.name=data['name'] 
-        phase.description=data['description']      
+        phase.description=data['description']
+        form_type = data['form_type']
+        form_fields = form_type.json_schema if form_type else None
+        phase.form_type = form_type
         phase.save()         
         doc = {          
             "name": data['name'],
-            "description": data['description']
+            "description": data['description'],
+            "form": form_fields
         }
         nsc = NoSQLClient()
         query_result = self.phase_db.get_query_result({"_id": phase.couch_id})[:]

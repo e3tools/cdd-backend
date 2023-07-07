@@ -79,7 +79,9 @@ class CreateActivityFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequi
             project = phase.project,
             phase = phase,
             total_tasks = data['total_tasks'],
-            order = data['order'])
+            order = data['order'],
+            form_type = data['form_type'] 
+          )
         activity.save()        
         return super().form_valid(form)
 
@@ -111,7 +113,8 @@ class CreateActivityForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMix
             description=data['description'],
             project = phase.project,
             phase = phase,
-            total_tasks = 0)
+            total_tasks = 0,
+            form_type = data['form_type'])
         activity_count = 0
         activity_count = Activity.objects.filter(phase_id = phase.id).all().count()
         orderNew = activity_count + 1
@@ -216,7 +219,11 @@ class UpdateActivityView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         data = form.cleaned_data
         activity = form.save(commit=False)
         activity.name=data['name'] 
-        activity.description=data['description']        
+        activity.description=data['description'] 
+        form_type = data['form_type']
+        form_fields = form_type.json_schema if form_type else None
+        activity.form_type = form_type
+
         #activity.phase = data['phase']
         #activity.project = activity.phase.project
         #activity.total_tasks = data['total_tasks']
@@ -225,6 +232,7 @@ class UpdateActivityView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         doc = {          
             "name": data['name'],
             "description": data['description'],
+            "form": form_fields,
             "sql_id": activity.id
         }
         nsc = NoSQLClient()

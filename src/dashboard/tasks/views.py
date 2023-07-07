@@ -79,7 +79,7 @@ class CreateTaskFormView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredM
         # if data['form']:
         #     form = data['form']
         form_type = data['form_type']
-        form_fields = form_type.json_schema
+        form_fields = form_type.json_schema if form_type else None
         task = Task(
             name=data['name'], 
             description=data['description'],
@@ -187,7 +187,7 @@ class UpdateTaskView(PageMixin, LoginRequiredMixin, AdminPermissionRequiredMixin
         data = form.cleaned_data
 
         form_type = data['form_type']
-        form_fields = form_type.json_schema # Get JSON representation of the form
+        form_fields = form_type.json_schema if form_type else None # Get JSON representation of the form
 
         task = form.save(commit=False)
         task.name=data['name'] 

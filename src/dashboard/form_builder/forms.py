@@ -117,7 +117,7 @@ class FormFieldForm(forms.ModelForm):
 					'class': 'text-hide icheck-primary'
 				}
 			),
-			# 'order': forms.NumberInput( 
+			# 'idx': forms.NumberInput( 
 			# 	attrs={
 			# 		'display': 'hidden'
 			# 	}
