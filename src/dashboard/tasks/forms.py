@@ -34,7 +34,7 @@ class TaskForm(forms.Form):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         #self.fields['project'].choices = [(x.id, x.name) for x in Project.objects.all()] 
-        #self.fields['activity'].choices = [(p.id, p.name) for p in Activity.objects.all()] 
+        #self.fields['activity'].choices = [(p.id, p.name) for p in Activity.objects.all()]
 
 class UpdateTaskForm(forms.ModelForm):
     #choices = tuple(Project.objects.all().values_list()) 

@@ -38,6 +38,19 @@ class FormTypeListView(PageMixin, LoginRequiredMixin, generic.ListView):
     #     # context['form'] = FormTypeForm()
     #     return context
 
+
+class FormTypeDetailView(LoginRequiredMixin, generic.DetailView):
+    template_name = 'form_builder/detail.html'
+    queryset = FormType.objects.all()
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context.update({
+            'form_fields': FormField.objects.filter(form=self.object)
+        })
+        return context
+
+
 class FormTypeListTableView(LoginRequiredMixin, generic.ListView):
     template_name = 'form_builder/form/form_list.html'
     context_object_name = 'forms'

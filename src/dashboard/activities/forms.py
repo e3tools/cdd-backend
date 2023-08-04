@@ -13,7 +13,6 @@ class ActivityForm(forms.Form):
     #choices = tuple(Project.objects.all().values_list())   
     name = forms.CharField()
     description = forms.CharField()
-    form_type = forms.ModelChoiceField(label=_("Form"), queryset=FormType.objects.distinct())
     #project = forms.ChoiceField(choices = [])
     #phase = forms.ChoiceField(choices = [])
     #total_tasks = forms.IntegerField()

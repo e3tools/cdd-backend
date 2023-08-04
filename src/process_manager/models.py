@@ -131,7 +131,6 @@ class Activity(models.Model):
 	total_tasks = models.IntegerField()
 	order = models.IntegerField()
 	couch_id = models.CharField(max_length=255, blank=True)
-	form_type = models.ForeignKey("FormType", on_delete=models.CASCADE, blank=False, null=True)
 
 	def __str__(self):
 		return self.phase.name + '-' + self.name
@@ -139,7 +138,6 @@ class Activity(models.Model):
 
 	def save(self, *args, **kwargs):
 		super().save(*args, **kwargs)
-		form_fields = self.form_type.json_schema if self.form_type else None
 		data = {
 			"name": self.name,
 			"type": "activity",
@@ -150,8 +148,7 @@ class Activity(models.Model):
 			"phase_id": self.phase.couch_id,
 			"total_tasks": self.total_tasks,
 			"completed_tasks": 0,
-			"sql_id": self.id,
-			"form": form_fields
+			"sql_id": self.id
 		}
 		
 		nsc = NoSQLClient()
@@ -206,6 +203,9 @@ class Task(models.Model):
 		# if self.form:
 		# 	form = self.form
 		form_fields = self.form_type.json_schema if self.form_type else None
+		print('---')
+		print(self.form_type)
+		print(self.form_type.json_schema)
 		data = {
 			"type": "task",
 			"project_id": self.activity.phase.project.couch_id,

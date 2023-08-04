@@ -113,8 +113,7 @@ class CreateActivityForm(PageMixin,LoginRequiredMixin,AdminPermissionRequiredMix
             description=data['description'],
             project = phase.project,
             phase = phase,
-            total_tasks = 0,
-            form_type = data['form_type'])
+            total_tasks = 0)
         activity_count = 0
         activity_count = Activity.objects.filter(phase_id = phase.id).all().count()
         orderNew = activity_count + 1

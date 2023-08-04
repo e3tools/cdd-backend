@@ -87,11 +87,13 @@
                                     <span class="_web">Move Down</span>
                                     <span class="_mobile"><i class="fa fa-arrow-down"></i></span>
                                 </a>
-                                <a href="#"
-                                    class="btn btn-primary btn-xs" title="{% translate 'Move Down' %}">
+                                {% if task.form_type %}
+                                <a href="{% url 'dashboard:form_builder:form_detail' task.form_type.id %}"
+                                    class="btn btn-primary btn-xs" title="{% translate 'Task Form' %}">
                                     <span class="_web">Task Form</span>
                                     <span class="_mobile"><i class="fa fa-arrow-down"></i></span>
                                 </a>
+                                {% endif %}
                                 <a href="{% url 'dashboard:tasks:delete' task.pk %}"
                                     class="btn btn-sm btn-danger" title="{% translate 'Delete' %}">
                                     <span class="_web">Delete</span>
